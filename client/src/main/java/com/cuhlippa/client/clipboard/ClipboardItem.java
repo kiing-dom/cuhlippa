@@ -16,4 +16,22 @@ public class ClipboardItem {
         this.timestamp = timestamp;
         this.hash = hash;
     }
+
+    public ItemType getType() { return type; }
+    public byte[] getContent() { return content; }
+    public LocalDateTime getTimestamp() { return timestamp; }
+    public String getHash() { return hash; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ClipboardItem)) return false;
+        ClipboardItem that = (ClipboardItem) o;
+        return Objects.equals(hash, that.hash);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(hash);
+    }
 }
