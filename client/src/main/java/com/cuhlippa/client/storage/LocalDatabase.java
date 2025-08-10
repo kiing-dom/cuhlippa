@@ -34,21 +34,39 @@ public class LocalDatabase {
         }
     }
 
-    private void saveItem(ClipboardItem item) {
+    public void saveItem(ClipboardItem item) {
         String sql = "INSERT OR IGNORE INTO clipboard(type, content, timestamp, hash) VALUES (?, ?, ?, ?)";
         try (Connection conn = DriverManager.getConnection(DB_URL);
                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                    pstmt.setString(1, item.getType().name());
-                    pstmt.setBytes(2, item.getContent());
-                    pstmt.setString(3, FORMATTER.format(item.getTimestamp()));
-                    pstmt.setString(4, item.getHash());
+            pstmt.setString(1, item.getType().name());
+            pstmt.setBytes(2, item.getContent());
+            pstmt.setString(3, FORMATTER.format(item.getTimestamp()));
+            pstmt.setString(4, item.getHash());
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    private List<ClipboardItem> getItems() {
-        // TODO: fill in later
+    public List<ClipboardItem> getItems() {
+        List<ClipboardItem> items = new ArrayList<>();
+
+        String sql = "SELECT type, content, timestamp, hash FROM clipboard ORDER by id DESC";
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                ItemType type = ItemType.valueOf(rs.getString("type"));
+                byte[] content = rs.getBytes("content");
+                LocalDateTime timestamp = LocalDateTime.parse(rs.getString("timestamp"));
+                String hash = rs.getString("hash");
+                items.add(new ClipboardItem(type, content, timestamp, hash));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return items;
     }
 }
