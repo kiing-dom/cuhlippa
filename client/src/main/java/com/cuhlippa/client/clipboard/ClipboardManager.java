@@ -7,7 +7,6 @@ import java.awt.*;
 import java.awt.datatransfer.*;
 import java.awt.image.BufferedImage;
 
-import java.security.DigestException;
 import java.security.MessageDigest;
 
 import java.time.LocalDateTime;

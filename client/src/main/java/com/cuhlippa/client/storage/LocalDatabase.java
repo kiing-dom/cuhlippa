@@ -21,8 +21,8 @@ public class LocalDatabase {
         try (Connection conn = DriverManager.getConnection(DB_URL);
                 Statement stmt = conn.createStatement()) {
             stmt.execute("""
-                    CREATE TABLE IF NONT EXISTS clipboard (
-                         id INTEGER PRIMARY KEY AUTOINCREMENT
+                    CREATE TABLE IF NOT EXISTS clipboard (
+                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                          type TEXT NOT NULL,
                          content BLOB NOT NULL,
                          timestamp TEXT NOT NULL,
