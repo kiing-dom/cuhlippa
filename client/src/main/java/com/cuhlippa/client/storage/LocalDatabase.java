@@ -43,12 +43,14 @@ public class LocalDatabase {
             pstmt.setString(3, FORMATTER.format(item.getTimestamp()));
             pstmt.setString(4, item.getHash());
 
+            pstmt.executeUpdate();
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-    public List<ClipboardItem> getItems() {
+    public List<ClipboardItem> getAllItems() {
         List<ClipboardItem> items = new ArrayList<>();
 
         String sql = "SELECT type, content, timestamp, hash FROM clipboard ORDER by id DESC";

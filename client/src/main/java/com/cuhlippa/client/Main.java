@@ -1,7 +1,10 @@
 package com.cuhlippa.client;
 
+import javax.swing.SwingUtilities;
+
 import com.cuhlippa.client.clipboard.ClipboardManager;
 import com.cuhlippa.client.storage.LocalDatabase;
+import com.cuhlippa.ui.ClipboardUI;
 
 public class Main {
     private static volatile boolean running = true;
@@ -16,6 +19,8 @@ public class Main {
 
         System.out.println("Starting clipboard listener...");
         cm.startListening();
+
+        SwingUtilities.invokeLater(() -> new ClipboardUI(db));
 
         System.out.println("Listening to clipboard. Press Ctrl+C to exit");
 
