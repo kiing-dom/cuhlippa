@@ -18,6 +18,7 @@ public class ClipboardUI extends JFrame {
     private final JList<ClipboardItem> itemList;
     private final JTextArea detailArea;
     private final JLabel imageLabel;
+    private final JPanel detailPanel;
     private final JScrollPane detailScrollPane;
 
     public ClipboardUI(LocalDatabase db) {
@@ -25,7 +26,7 @@ public class ClipboardUI extends JFrame {
         this.db = db;
 
         listModel = new DefaultListModel<>();
-        itemList = new JList<>();
+        itemList = new JList<>(listModel);
         detailArea = new JTextArea(10, 40);
         detailArea.setLineWrap(true);
         detailArea.setWrapStyleWord(true);
@@ -38,7 +39,7 @@ public class ClipboardUI extends JFrame {
 
         JScrollPane listScrollPane = new JScrollPane(itemList);
 
-        JPanel detailPanel = new JPanel(new CardLayout());
+        detailPanel = new JPanel(new CardLayout());
         detailScrollPane = new JScrollPane(detailArea);
         JScrollPane imageScrollPane = new JScrollPane(imageLabel);
 
@@ -52,7 +53,7 @@ public class ClipboardUI extends JFrame {
         itemList.addListSelectionListener(e -> showSelectedItemDetail());
 
         add(listScrollPane, BorderLayout.CENTER);
-        add(detailScrollPane, BorderLayout.SOUTH);
+        add(detailPanel, BorderLayout.SOUTH);
         add(refreshButton, BorderLayout.NORTH);
 
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -74,7 +75,7 @@ public class ClipboardUI extends JFrame {
 
     private void showSelectedItemDetail() {
         ClipboardItem selected = itemList.getSelectedValue();
-        CardLayout cardLayout = (CardLayout) (detailScrollPane.getParent()).getLayout();
+        CardLayout cardLayout = (CardLayout) (detailPanel.getParent()).getLayout();
 
         if (selected == null) {
             detailArea.setText("");
@@ -84,7 +85,7 @@ public class ClipboardUI extends JFrame {
 
         if (selected.getType() == ItemType.TEXT || selected.getType() == ItemType.FILE_PATH) {
             detailArea.setText(new String(selected.getContent()));
-            cardLayout.show(detailScrollPane.getParent(), "TEXT");
+            cardLayout.show(detailPanel.getParent(), "TEXT");
         } else if (selected.getType() == ItemType.IMAGE) {
             try {
                 byte[] imageData = selected.getContent();
@@ -101,11 +102,11 @@ public class ClipboardUI extends JFrame {
                         imageLabel.setIcon(new ImageIcon(image));
                     }
 
-                    cardLayout.show(detailScrollPane.getParent(), "IMAGE");
+                    cardLayout.show(detailPanel.getParent(), "IMAGE");
                 }
             } catch (Exception e) {
                 detailArea.setText("Error loading image: " + e.getMessage());
-                cardLayout.show(detailScrollPane.getParent(), "TEXT");
+                cardLayout.show(detailPanel.getParent(), "TEXT");
             }
         }
     }
