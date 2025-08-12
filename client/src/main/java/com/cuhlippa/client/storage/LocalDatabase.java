@@ -48,7 +48,7 @@ public class LocalDatabase {
         }
     }
 
-    public List<ClipboardItem> getItems() {
+    public List<ClipboardItem> getAllItems() {
         List<ClipboardItem> items = new ArrayList<>();
 
         String sql = "SELECT type, content, timestamp, hash FROM clipboard ORDER by id DESC";
