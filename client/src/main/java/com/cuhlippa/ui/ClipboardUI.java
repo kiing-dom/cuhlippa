@@ -16,8 +16,8 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     private static final String IMAGE_CARD = "IMAGE";
     private static final int DETAIL_AREA_ROWS = 10;
     private static final int DETAIL_AREA_COLS = 40;
-    private static final int preferredWindowWidth = 1280;
-    private static final int prefferedWindowHeight = 720;
+    private static final int PREFERRED_WINDOW_WIDTH = 1280;
+    private static final int PREFERRED_WINDOW_HEIGHT = 720;
 
     private final transient LocalDatabase db;
     private DefaultListModel<ClipboardItem> listModel;
@@ -77,7 +77,7 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
 
     private void configureWindow() {
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        setPreferredSize(new Dimension(preferredWindowWidth, prefferedWindowHeight));
+        setPreferredSize(new Dimension(PREFERRED_WINDOW_WIDTH, PREFERRED_WINDOW_HEIGHT));
         pack();
         setLocationRelativeTo(null);
         setVisible(true);
