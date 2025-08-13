@@ -1,33 +1,47 @@
 package com.cuhlippa.ui;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 
 import com.cuhlippa.client.storage.LocalDatabase;
+import com.cuhlippa.ui.utils.ClipboardItemRenderer;
+import com.cuhlippa.ui.utils.ImageUtils;
 import com.cuhlippa.client.clipboard.ClipboardItem;
-import com.cuhlippa.client.clipboard.ItemType;
+import com.cuhlippa.client.clipboard.ClipboardListener;
 
 import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.util.List;
 
-public class ClipboardUI extends JFrame {
+public class ClipboardUI extends JFrame implements ClipboardListener {
+    private static final String TEXT_CARD = "TEXT";
+    private static final String IMAGE_CARD = "IMAGE";
+    private static final int DETAIL_AREA_ROWS = 10;
+    private static final int DETAIL_AREA_COLS = 40;
+    private static final int PREFERRED_WINDOW_WIDTH = 1280;
+    private static final int PREFERRED_WINDOW_HEIGHT = 720;
+
     private final transient LocalDatabase db;
-    private final DefaultListModel<ClipboardItem> listModel;
-    private final JList<ClipboardItem> itemList;
-    private final JTextArea detailArea;
-    private final JLabel imageLabel;
-    private final JPanel detailPanel;
-    private final JScrollPane detailScrollPane;
+    private DefaultListModel<ClipboardItem> listModel;
+    private JList<ClipboardItem> itemList;
+    private JTextArea detailArea;
+    private JLabel imageLabel;
+    private JPanel detailPanel;
 
     public ClipboardUI(LocalDatabase db) {
         super("Clipboard History");
         this.db = db;
+        initializeComponents();
+        setupLayout();
+        configureEventListeners();
+        configureWindow();
+        loadItems();
+    }
 
+    private void initializeComponents() {
         listModel = new DefaultListModel<>();
         itemList = new JList<>(listModel);
-        detailArea = new JTextArea(10, 40);
+        itemList.setCellRenderer(new ClipboardItemRenderer());
+            
+        detailArea = new JTextArea(DETAIL_AREA_ROWS, DETAIL_AREA_COLS);
         detailArea.setLineWrap(true);
         detailArea.setWrapStyleWord(true);
         detailArea.setEditable(false);
@@ -35,79 +49,96 @@ public class ClipboardUI extends JFrame {
         imageLabel = new JLabel();
         imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
+        detailPanel = new JPanel(new CardLayout());
+    }
+
+    private void setupLayout() {
         setLayout(new BorderLayout());
 
         JScrollPane listScrollPane = new JScrollPane(itemList);
-
-        detailPanel = new JPanel(new CardLayout());
-        detailScrollPane = new JScrollPane(detailArea);
+        JScrollPane detailScrollPane = new JScrollPane(detailArea);
         JScrollPane imageScrollPane = new JScrollPane(imageLabel);
 
-        detailPanel.add(detailScrollPane, "TEXT");
-        detailPanel.add(imageScrollPane, "IMAGE");
+        detailPanel.add(detailScrollPane, TEXT_CARD);
+        detailPanel.add(imageScrollPane, IMAGE_CARD);
 
         JButton refreshButton = new JButton("Refresh");
         refreshButton.addActionListener(e -> loadItems());
 
-        itemList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        itemList.addListSelectionListener(e -> showSelectedItemDetail());
-
         add(listScrollPane, BorderLayout.CENTER);
         add(detailPanel, BorderLayout.SOUTH);
         add(refreshButton, BorderLayout.NORTH);
+    }
 
+    private void configureEventListeners() {
+        itemList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        itemList.addListSelectionListener(e -> showSelectedItemDetail());
+    }
+
+    private void configureWindow() {
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        setPreferredSize(new Dimension(PREFERRED_WINDOW_WIDTH, PREFERRED_WINDOW_HEIGHT));
         pack();
         setLocationRelativeTo(null);
         setVisible(true);
-
-        loadItems();
     }
-
 
     private void loadItems() {
         listModel.clear();
         List<ClipboardItem> items = db.getAllItems();
-        for (ClipboardItem item : items) {
-            listModel.addElement(item);
-        }
+        items.forEach(listModel::addElement);
     }
 
     private void showSelectedItemDetail() {
         ClipboardItem selected = itemList.getSelectedValue();
-        CardLayout cardLayout = (CardLayout) detailPanel.getLayout();
 
         if (selected == null) {
-            detailArea.setText("");
-            imageLabel.setIcon(null);
+            clearItemDisplay();
             return;
         }
 
-        if (selected.getType() == ItemType.TEXT || selected.getType() == ItemType.FILE_PATH) {
-            detailArea.setText(new String(selected.getContent()));
-            cardLayout.show(detailPanel, "TEXT");
-        } else if (selected.getType() == ItemType.IMAGE) {
-            try {
-                byte[] imageData = selected.getContent();
-                BufferedImage image  = ImageIO.read(new ByteArrayInputStream(imageData));
-
-                if (image != null) {
-                    int maxWidth = 400;
-                    int maxHeight = 300;
-
-                    if (image.getWidth() > maxWidth || image.getHeight() > maxHeight) {
-                        Image scaledImage = image.getScaledInstance(maxWidth, maxHeight, Image.SCALE_SMOOTH);
-                        imageLabel.setIcon(new ImageIcon(scaledImage));
-                    } else {
-                        imageLabel.setIcon(new ImageIcon(image));
-                    }
-
-                    cardLayout.show(detailPanel, "IMAGE");
-                }
-            } catch (Exception e) {
-                detailArea.setText("Error loading image: " + e.getMessage());
-                cardLayout.show(detailPanel, "TEXT");
-            }
+        switch (selected.getType()) {
+            case TEXT, FILE_PATH:
+                displayTextContent(selected);
+                break;
+            case IMAGE:
+                displayImageContent(selected);
+                break;
+            default:
+                displayTextContent(selected);
         }
+    }
+
+    private void showCard(String cardName) {
+        ((CardLayout) detailPanel.getLayout()).show(detailPanel, cardName);
+    }
+
+    private void clearItemDisplay() {
+        detailArea.setText("");
+        imageLabel.setIcon(null);
+    }
+
+    private void displayTextContent(ClipboardItem item) {
+        detailArea.setText(new String(item.getContent()));
+        showCard(TEXT_CARD);
+    }
+
+    private void displayImageContent(ClipboardItem item) {
+        try {
+            ImageIcon icon = ImageUtils.createScaledImageIcon(item.getContent());
+            imageLabel.setIcon(icon);
+            showCard(IMAGE_CARD);
+        } catch (Exception e) {
+            detailArea.setText("Error loading image: " + e.getMessage());
+            showCard(TEXT_CARD);
+        }
+    }
+
+    @Override
+    public void onClipboardItemAdded(ClipboardItem item) {
+        SwingUtilities.invokeLater(() -> {
+            listModel.add(0, item);
+            itemList.setSelectedIndex(0);
+        });
     }
 }
