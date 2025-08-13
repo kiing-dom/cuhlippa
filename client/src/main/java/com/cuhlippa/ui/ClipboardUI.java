@@ -5,6 +5,7 @@ import javax.swing.*;
 
 import com.cuhlippa.client.storage.LocalDatabase;
 import com.cuhlippa.client.clipboard.ClipboardItem;
+import com.cuhlippa.client.clipboard.ClipboardListener;
 import com.cuhlippa.client.clipboard.ItemType;
 
 import java.awt.*;
@@ -12,7 +13,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.util.List;
 
-public class ClipboardUI extends JFrame {
+public class ClipboardUI extends JFrame implements ClipboardListener {
     private final transient LocalDatabase db;
     private final DefaultListModel<ClipboardItem> listModel;
     private final JList<ClipboardItem> itemList;
@@ -109,5 +110,13 @@ public class ClipboardUI extends JFrame {
                 cardLayout.show(detailPanel, "TEXT");
             }
         }
+    }
+
+    @Override
+    public void onClipboardItemAdded(ClipboardItem item) {
+        SwingUtilities.invokeLater(() -> {
+            listModel.add(0, item);
+            itemList.setSelectedIndex(0);
+        });
     }
 }
