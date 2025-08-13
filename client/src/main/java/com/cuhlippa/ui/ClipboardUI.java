@@ -3,6 +3,7 @@ package com.cuhlippa.ui;
 import javax.swing.*;
 
 import com.cuhlippa.client.storage.LocalDatabase;
+import com.cuhlippa.ui.utils.ClipboardItemRenderer;
 import com.cuhlippa.ui.utils.ImageUtils;
 import com.cuhlippa.client.clipboard.ClipboardItem;
 import com.cuhlippa.client.clipboard.ClipboardListener;
@@ -15,6 +16,8 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     private static final String IMAGE_CARD = "IMAGE";
     private static final int DETAIL_AREA_ROWS = 10;
     private static final int DETAIL_AREA_COLS = 40;
+    private static final int preferredWindowWidth = 1280;
+    private static final int prefferedWindowHeight = 720;
 
     private final transient LocalDatabase db;
     private DefaultListModel<ClipboardItem> listModel;
@@ -36,7 +39,8 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     private void initializeComponents() {
         listModel = new DefaultListModel<>();
         itemList = new JList<>(listModel);
-
+        itemList.setCellRenderer(new ClipboardItemRenderer());
+            
         detailArea = new JTextArea(DETAIL_AREA_ROWS, DETAIL_AREA_COLS);
         detailArea.setLineWrap(true);
         detailArea.setWrapStyleWord(true);
@@ -73,6 +77,7 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
 
     private void configureWindow() {
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        setPreferredSize(new Dimension(preferredWindowWidth, prefferedWindowHeight));
         pack();
         setLocationRelativeTo(null);
         setVisible(true);
