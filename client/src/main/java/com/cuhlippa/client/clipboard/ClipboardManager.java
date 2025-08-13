@@ -19,10 +19,12 @@ import java.io.File;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.ArrayList;
 
 public class ClipboardManager implements ClipboardOwner {
     private final LocalDatabase db;
     private final Clipboard systemClipboard;
+    private final List<ClipboardListener> listeners = new ArrayList<>();
 
     public ClipboardManager(LocalDatabase db) {
         this.db = db;
@@ -61,6 +63,7 @@ public class ClipboardManager implements ClipboardOwner {
                 String hash = sha256(contentBytes);
                 ClipboardItem item = new ClipboardItem(ItemType.TEXT, contentBytes, LocalDateTime.now(), hash);
                 db.saveItem(item);
+                notifyListeners(item);
                 System.out.println("Saved new text item to clipboard: " + data);
             }
             if (t != null && t.isDataFlavorSupported(DataFlavor.imageFlavor)) {
@@ -82,6 +85,7 @@ public class ClipboardManager implements ClipboardOwner {
                 String hash = sha256(contentBytes);
                 ClipboardItem item = new ClipboardItem(ItemType.IMAGE, contentBytes, LocalDateTime.now(), hash);
                 db.saveItem(item);
+                notifyListeners(item);
                 System.out.println("Saved new image item to clipboard");
             }
             if (t != null && t.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
@@ -96,6 +100,7 @@ public class ClipboardManager implements ClipboardOwner {
                 String hash = sha256(contentBytes);
                 ClipboardItem item = new ClipboardItem(ItemType.FILE_PATH, contentBytes, LocalDateTime.now(), hash);
                 db.saveItem(item);
+                notifyListeners(item);
                 System.out.println("Saved new file path item(s) to clipboard");
             }
         } catch (UnsupportedFlavorException | IOException e) {
@@ -109,6 +114,16 @@ public class ClipboardManager implements ClipboardOwner {
             return Arrays.toString(digest.digest(data));
         } catch (Exception e) {
             throw new ClipboardHashingException("Failed to generate SHA-256 hash for clipboard data", e);
+        }
+    }
+
+    public void addClipboardListener(ClipboardListener listener) {
+        listeners.add(listener);
+    }
+
+    public void notifyListeners(ClipboardItem item) {
+        for (ClipboardListener listener : listeners) {
+            listener.onClipboardItemAdded(item);
         }
     }
 }
