@@ -16,11 +16,13 @@ public class Main {
     public static void main(String[] args) {
         LocalDatabase db = new LocalDatabase();
         ClipboardManager cm = new ClipboardManager(db);
+        ClipboardUI ui = new ClipboardUI(db);
 
+        cm.addClipboardListener(ui);
         System.out.println("Starting clipboard listener...");
         cm.startListening();
 
-        SwingUtilities.invokeLater(() -> new ClipboardUI(db));
+        SwingUtilities.invokeLater(() -> ui.setVisible(true));
 
         System.out.println("Listening to clipboard. Press Ctrl+C to exit");
 
