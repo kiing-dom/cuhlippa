@@ -2,6 +2,8 @@ package com.cuhlippa.ui;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import com.cuhlippa.client.storage.LocalDatabase;
 import com.cuhlippa.ui.utils.ClipboardItemRenderer;
@@ -29,16 +31,18 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     private static final String IMAGE_CARD = "IMAGE";
     private static final int DETAIL_AREA_ROWS = 10;
     private static final int DETAIL_AREA_COLS = 40;
-    private static final int PREFERRED_WINDOW_WIDTH = 1280;
-    private static final int PREFERRED_WINDOW_HEIGHT = 720;
+    private static final int PREFERRED_WINDOW_WIDTH = 800;
+    private static final int PREFERRED_WINDOW_HEIGHT = 600;
 
     private final transient LocalDatabase db;
     private DefaultListModel<ClipboardItem> listModel;
     private JList<ClipboardItem> itemList;
+    private transient List<ClipboardItem> allItems;
     private JTextArea detailArea;
     private JLabel imageLabel;
     private JLabel statusBar;
     private JPanel detailPanel;
+    private JTextField searchField;
 
     public ClipboardUI(LocalDatabase db) {
         super("Clipboard History");
@@ -68,6 +72,16 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         statusBar = new JLabel(" Ready");
         statusBar.setBorder(BorderFactory.createLoweredBevelBorder());
         statusBar.setPreferredSize(new Dimension(0, 20));
+
+        searchField = new JTextField(20);
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) { filterItems(); }
+            @Override
+            public void removeUpdate(DocumentEvent e) { filterItems(); }
+            @Override
+            public void changedUpdate(DocumentEvent e) { filterItems(); }
+        });
     }
 
     private void setupLayout() {
@@ -77,6 +91,8 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         JScrollPane detailScrollPane = new JScrollPane(detailArea);
         JScrollPane imageScrollPane = new JScrollPane(imageLabel);
         JPanel bottomPanel = new JPanel(new BorderLayout());
+        JPanel topPanel = new JPanel(new BorderLayout());
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
         detailPanel.add(detailScrollPane, TEXT_CARD);
         detailPanel.add(imageScrollPane, IMAGE_CARD);
@@ -84,11 +100,38 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         JButton refreshButton = new JButton("Refresh");
         refreshButton.addActionListener(e -> loadItems());
 
+        searchPanel.add(new JLabel("Search"));
+        searchPanel.add(searchField);
         add(listScrollPane, BorderLayout.CENTER);
+        topPanel.add(searchPanel, BorderLayout.CENTER);
+        topPanel.add(refreshButton, BorderLayout.EAST);
         bottomPanel.add(detailPanel, BorderLayout.CENTER);
         bottomPanel.add(statusBar, BorderLayout.SOUTH);
+
+        add(topPanel, BorderLayout.NORTH);
         add(bottomPanel, BorderLayout.SOUTH);
-        add(refreshButton, BorderLayout.NORTH);
+
+    }
+
+    private void filterItems() {
+        String query = searchField.getText().toLowerCase().trim();
+        listModel.clear();
+
+        if (query.isEmpty()) {
+            allItems.forEach(listModel::addElement);
+        } else {
+            allItems.stream()
+                .filter(item -> matchesSearch(item, query))
+                .forEach(listModel::addElement);
+        }
+
+        showStatusMessage("Found " + listModel.size() + " items");
+    }
+
+    private boolean matchesSearch(ClipboardItem item, String query) {
+        String content = new String(item.getContent()).toLowerCase();
+        return content.contains(query) ||
+            item.getType().toString().toLowerCase().contains(query);
     }
 
     private void configureEventListeners() {
@@ -106,9 +149,10 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     }
 
     private void loadItems() {
+        allItems = db.getAllItems();
         listModel.clear();
-        List<ClipboardItem> items = db.getAllItems();
-        items.forEach(listModel::addElement);
+        allItems.forEach(listModel::addElement);
+        searchField.setText("");
     }
 
     private void showSelectedItemDetail() {
@@ -159,6 +203,7 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     @Override
     public void onClipboardItemAdded(ClipboardItem item) {
         SwingUtilities.invokeLater(() -> {
+            allItems.add(0, item);
             listModel.add(0, item);
             itemList.setSelectedIndex(0);
         });
@@ -196,6 +241,7 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                     ByteArrayInputStream bais = new ByteArrayInputStream(item.getContent());
                     BufferedImage img = ImageIO.read(bais);
                     if (img != null) transferable = new ImageSelection(img);
+                    showStatusMessage("Image copied to clipboard");
                     break;
                 case FILE_PATH:
                     String path = new String(item.getContent());
@@ -203,6 +249,7 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                     if(file.exists()) {
                         transferable = new FileTransferable(Collections.singletonList(file));
                     }
+                        showStatusMessage("File path copied to clipboard");
                     break;
             }
             if (transferable != null) {
