@@ -1,14 +1,27 @@
 package com.cuhlippa.ui;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 
 import com.cuhlippa.client.storage.LocalDatabase;
 import com.cuhlippa.ui.utils.ClipboardItemRenderer;
+import com.cuhlippa.ui.utils.FileTransferable;
+import com.cuhlippa.ui.utils.ImageSelection;
 import com.cuhlippa.ui.utils.ImageUtils;
 import com.cuhlippa.client.clipboard.ClipboardItem;
 import com.cuhlippa.client.clipboard.ClipboardListener;
 
 import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 public class ClipboardUI extends JFrame implements ClipboardListener {
@@ -73,6 +86,7 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     private void configureEventListeners() {
         itemList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         itemList.addListSelectionListener(e -> showSelectedItemDetail());
+        setupMouseListener();
     }
 
     private void configureWindow() {
@@ -140,5 +154,60 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
             listModel.add(0, item);
             itemList.setSelectedIndex(0);
         });
+    }
+
+    private void setupMouseListener() {
+        itemList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    handleDoubleClick();
+                }
+            }
+        });
+    }
+
+    private void handleDoubleClick() {
+        ClipboardItem selected = itemList.getSelectedValue();
+        if (selected != null) {
+            copyItemToClipboard(selected);
+        }
+    }
+
+    private void copyItemToClipboard(ClipboardItem item) {
+        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+
+        try {
+            Transferable transferable = null;
+            switch (item.getType()) {
+                case TEXT:
+                    transferable = new StringSelection(new String(item.getContent()));
+                    showStatusMessage("Text copied to clipboard");
+                    break;
+                case IMAGE:
+                    ByteArrayInputStream bais = new ByteArrayInputStream(item.getContent());
+                    BufferedImage img = ImageIO.read(bais);
+                    if (img != null) transferable = new ImageSelection(img);
+                    break;
+                case FILE_PATH:
+                    String path = new String(item.getContent());
+                    File file = new File(path);
+                    if(file.exists()) {
+                        transferable = new FileTransferable(Collections.singletonList(file));
+                    }
+                    break;
+            }
+            if (transferable != null) {
+                clipboard.setContents(transferable, null);
+                System.out.println("Copied item back to system clipboard: " + item.getType());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void showStatusMessage(String message) {
+        //TODO: add a status bar or tooltip later
+        System.out.println(message);
     }
 }
