@@ -71,4 +71,34 @@ public class LocalDatabase {
 
         return items;
     }
+
+    public boolean deleteItemByHash(String hash) {
+        String sql = "DELETE FROM clipboard WHERE hash = ?";
+
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+            PreparedStatement pstmt = conn.prepareStatement(sql)
+            ) {
+            pstmt.setString(1, hash);
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.err.println("Error deleting item: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean deleteAllItems() {
+        String sql = "DELETE FROM clipboard";
+
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            int rowsAffected = pstmt.executeUpdate();
+            System.out.println("Deleted " + rowsAffected + " items from clipboard");
+
+            return true;
+         } catch (SQLException e) {
+            System.err.println("Error deleting items: " + e.getMessage());
+            return false;
+         }
+    }
 }
