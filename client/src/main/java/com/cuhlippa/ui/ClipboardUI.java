@@ -17,6 +17,7 @@ import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
+import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
@@ -138,6 +139,7 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         itemList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         itemList.addListSelectionListener(e -> showSelectedItemDetail());
         setupMouseListener();
+        setupKeyboardShortcuts();
     }
 
     private void configureWindow() {
@@ -215,15 +217,109 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
                     handleDoubleClick();
+                } else if (SwingUtilities.isRightMouseButton(e)) {
+                    showContextMenu(e);
                 }
             }
         });
+    }
+
+    private void setupKeyboardShortcuts() {
+        itemList.getInputMap().put(KeyStroke.getKeyStroke("DELETE"), "delete");
+        itemList.getActionMap().put("delete", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                deleteSelectedItem();
+            }
+        });
+        
+        itemList.getInputMap().put(KeyStroke.getKeyStroke("ctrl shift DELETE"), "deleteAll");
+        itemList.getActionMap().put("deleteAll", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                deleteAllItems();
+            }
+        });
+    }
+
+    private void showContextMenu(MouseEvent e) {
+        int index = itemList.locationToIndex(e.getPoint());
+        if (index >= 0) {
+            itemList.setSelectedIndex(index);
+
+            JPopupMenu contextMenu = new JPopupMenu();
+            JMenuItem copyItem = new JMenuItem("Copy to Clipboard");
+            JMenuItem deleteItem = new JMenuItem("Delete Item");
+            JMenuItem deleteAll = new JMenuItem("Delete All");
+
+            copyItem.addActionListener(evt -> handleDoubleClick());
+            deleteItem.addActionListener(evt -> deleteSelectedItem());
+            deleteAll.addActionListener(evt -> deleteAllItems());
+
+            contextMenu.add(copyItem);
+            contextMenu.addSeparator();
+            contextMenu.add(deleteItem);
+            contextMenu.add(deleteAll);
+
+            contextMenu.show(itemList, e.getX(), e.getY());
+        }
     }
 
     private void handleDoubleClick() {
         ClipboardItem selected = itemList.getSelectedValue();
         if (selected != null) {
             copyItemToClipboard(selected);
+        }
+    }
+
+    private void deleteSelectedItem() {
+        ClipboardItem selected = itemList.getSelectedValue();
+        if (selected != null) {
+            int result = JOptionPane.showConfirmDialog(
+                this,
+                "Delete this clipboardItem",
+                "Confirm Delete",
+                JOptionPane.YES_NO_OPTION
+            );
+
+            if (result == JOptionPane.YES_OPTION) {
+                boolean deleted = db.deleteItemByHash(selected.getHash());
+                if (deleted) {
+                    allItems.remove(selected);
+                    listModel.removeElement(selected);
+                    clearItemDisplay();
+                    showStatusMessage("Deleted item.");
+                } else {
+                    showStatusMessage("Failed to delete item.");
+                }
+            }
+        }
+    }
+
+    private void deleteAllItems() {
+        if(allItems.isEmpty()) {
+            showStatusMessage("No items to delete.");
+            return;
+        }
+
+        int result = JOptionPane.showConfirmDialog(
+            this,
+            "Delete all clipboard history? This cannot be undone!",
+            "Confirm Delete All",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+
+        if (result == JOptionPane.YES_OPTION) {
+            boolean allDeleted = db.deleteAllItems();
+            if (allDeleted) {
+                allItems.clear();
+                listModel.clear();
+                clearItemDisplay();
+                showStatusMessage("Deleted all items.");
+            } else {
+                showStatusMessage("Failed to delete all items");
+            }
         }
     }
 
