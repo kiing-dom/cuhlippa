@@ -37,6 +37,7 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     private JList<ClipboardItem> itemList;
     private JTextArea detailArea;
     private JLabel imageLabel;
+    private JLabel statusBar;
     private JPanel detailPanel;
 
     public ClipboardUI(LocalDatabase db) {
@@ -63,6 +64,10 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         detailPanel = new JPanel(new CardLayout());
+
+        statusBar = new JLabel(" Ready");
+        statusBar.setBorder(BorderFactory.createLoweredBevelBorder());
+        statusBar.setPreferredSize(new Dimension(0, 20));
     }
 
     private void setupLayout() {
@@ -71,6 +76,7 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         JScrollPane listScrollPane = new JScrollPane(itemList);
         JScrollPane detailScrollPane = new JScrollPane(detailArea);
         JScrollPane imageScrollPane = new JScrollPane(imageLabel);
+        JPanel bottomPanel = new JPanel(new BorderLayout());
 
         detailPanel.add(detailScrollPane, TEXT_CARD);
         detailPanel.add(imageScrollPane, IMAGE_CARD);
@@ -79,7 +85,9 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         refreshButton.addActionListener(e -> loadItems());
 
         add(listScrollPane, BorderLayout.CENTER);
-        add(detailPanel, BorderLayout.SOUTH);
+        bottomPanel.add(detailPanel, BorderLayout.CENTER);
+        bottomPanel.add(statusBar, BorderLayout.SOUTH);
+        add(bottomPanel, BorderLayout.SOUTH);
         add(refreshButton, BorderLayout.NORTH);
     }
 
@@ -207,7 +215,10 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     }
 
     private void showStatusMessage(String message) {
-        //TODO: add a status bar or tooltip later
-        System.out.println(message);
+        statusBar.setText(" " + message);
+
+        Timer timer = new Timer(3000, e -> statusBar.setText(" Ready"));
+        timer.setRepeats(false);
+        timer.start();
     }
 }
