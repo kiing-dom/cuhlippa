@@ -423,19 +423,11 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     }
     
     private void applyContainerColors(ThemeColors colors) {
-        Component[] topComponents = ((JPanel) getContentPane().getComponent(0)).getComponents();
-        for (Component comp : topComponents) {
-            if (comp instanceof JPanel panel) {
-                panel.setBackground(colors.background);
-                setComponentColors(panel, colors);
-            }
-        }
-        
-        Component[] bottomComponents = ((JPanel) getContentPane().getComponent(1)).getComponents();
-        for (Component comp : bottomComponents) {
-            if (comp instanceof JPanel panel) {
-                panel.setBackground(colors.background);
-                setComponentColors(panel, colors);
+        Container contentPane = getContentPane();
+        for (Component comp : contentPane.getComponents()) {
+            if (comp instanceof Container container) {
+                container.setBackground(colors.background);
+                setComponentColors(container, colors);
             }
         }
     }
