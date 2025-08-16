@@ -1,6 +1,7 @@
 package com.cuhlippa.client;
 
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 
 import com.cuhlippa.client.clipboard.ClipboardManager;
 import com.cuhlippa.client.config.Settings;
@@ -14,8 +15,12 @@ public class Main {
     private Main() {
         // Private constructor to prevent instantiation
     }
-    
-    public static void main(String[] args) {
+      public static void main(String[] args) {        try {
+            UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
         SettingsManager.loadSettings();
         Settings settings = SettingsManager.getSettings();
 

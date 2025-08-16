@@ -50,12 +50,12 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
 
     public ClipboardUI(LocalDatabase db, Settings settings) {
         super("Clipboard History");        this.db = db;
-        this.settings = settings;
-        initializeComponents();
+        this.settings = settings;        initializeComponents();
         setupLayout();
         setupMenuBar();
         configureEventListeners();
         configureWindow();
+        applyTheme();
         loadItems();
     }
 
@@ -365,16 +365,133 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
 
         Timer timer = new Timer(3000, e -> statusBar.setText(" Ready"));
         timer.setRepeats(false);
-        timer.start();
-    }    private void applyTheme() {
+        timer.start();    }
+
+    private void applyTheme() {
+        ThemeColors colors = getThemeColors();
+        applyMainComponentColors(colors);
+        applyContainerColors(colors);
+        applyMenuBarColors(colors);
+        
+        SwingUtilities.updateComponentTreeUI(this);
+        repaint();
+    }
+    
+    private ThemeColors getThemeColors() {
         if ("dark".equals(settings.getTheme())) {
-            getContentPane().setBackground(Color.DARK_GRAY);
-            statusBar.setBackground(Color.DARK_GRAY);
-            statusBar.setForeground(Color.WHITE);
+            return new ThemeColors(
+                new Color(45, 45, 45),
+                Color.WHITE,
+                new Color(60, 60, 60),
+                new Color(70, 70, 70)
+            );
         } else {
-            getContentPane().setBackground(Color.WHITE);
-            statusBar.setBackground(Color.LIGHT_GRAY);
-            statusBar.setForeground(Color.BLACK);
+            return new ThemeColors(
+                Color.WHITE,
+                Color.BLACK,
+                new Color(245, 245, 245),
+                new Color(230, 230, 230)
+            );
+        }
+    }
+    
+    private void applyMainComponentColors(ThemeColors colors) {
+        getContentPane().setBackground(colors.background);
+        
+        statusBar.setBackground(colors.panel);
+        statusBar.setForeground(colors.foreground);
+        statusBar.setOpaque(true);
+        
+        itemList.setBackground(colors.background);
+        itemList.setForeground(colors.foreground);
+        itemList.setSelectionBackground(colors.panel);
+        itemList.setSelectionForeground(colors.foreground);
+        
+        detailArea.setBackground(colors.background);
+        detailArea.setForeground(colors.foreground);
+        detailArea.setCaretColor(colors.foreground);
+        
+        searchField.setBackground(colors.background);
+        searchField.setForeground(colors.foreground);
+        searchField.setCaretColor(colors.foreground);
+        searchField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(colors.panel, 1),
+            BorderFactory.createEmptyBorder(2, 5, 2, 5)
+        ));
+        
+        detailPanel.setBackground(colors.background);
+    }
+    
+    private void applyContainerColors(ThemeColors colors) {
+        Component[] topComponents = ((JPanel) getContentPane().getComponent(0)).getComponents();
+        for (Component comp : topComponents) {
+            if (comp instanceof JPanel panel) {
+                panel.setBackground(colors.background);
+                setComponentColors(panel, colors);
+            }
+        }
+        
+        Component[] bottomComponents = ((JPanel) getContentPane().getComponent(1)).getComponents();
+        for (Component comp : bottomComponents) {
+            if (comp instanceof JPanel panel) {
+                panel.setBackground(colors.background);
+                setComponentColors(panel, colors);
+            }
+        }
+    }
+    
+    private void applyMenuBarColors(ThemeColors colors) {
+        if (getJMenuBar() != null) {
+            getJMenuBar().setBackground(colors.panel);
+            getJMenuBar().setOpaque(true);
+            for (int i = 0; i < getJMenuBar().getMenuCount(); i++) {
+                JMenu menu = getJMenuBar().getMenu(i);
+                menu.setBackground(colors.panel);
+                menu.setForeground(colors.foreground);
+                menu.setOpaque(true);
+            }
+        }
+    }
+    
+    private void setComponentColors(Container container, ThemeColors colors) {
+        for (Component comp : container.getComponents()) {
+            comp.setBackground(colors.background);
+            comp.setForeground(colors.foreground);
+            
+            if (comp instanceof JButton button) {
+                button.setBackground(colors.button);
+                button.setOpaque(true);
+                button.setBorderPainted(false);
+                button.setFocusPainted(false);
+            } else if (comp instanceof JLabel label) {
+                label.setOpaque(true);
+            } else if (comp instanceof JScrollPane scrollPane) {
+                scrollPane.getViewport().setBackground(colors.background);
+                if (scrollPane.getVerticalScrollBar() != null) {
+                    scrollPane.getVerticalScrollBar().setBackground(colors.background);
+                }
+                if (scrollPane.getHorizontalScrollBar() != null) {
+                    scrollPane.getHorizontalScrollBar().setBackground(colors.background);
+                }
+            }
+            
+            if (comp instanceof Container container1) {
+                setComponentColors(container1, colors);
+            }
+        }
+    }
+    
+    private static class ThemeColors {
+        final Color background;
+        final Color foreground;
+        final Color panel;
+        final Color button;
+        
+        ThemeColors(Color background, Color foreground, Color panel, Color button) {
+            this.background = background;
+            this.foreground = foreground;
+            this.panel = panel;
+            this.button = button;
         }
     }private void setupMenuBar() {
         JMenuBar menuBar = new JMenuBar();
