@@ -5,13 +5,15 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
+import com.cuhlippa.client.clipboard.ClipboardItem;
+import com.cuhlippa.client.clipboard.ClipboardListener;
+import com.cuhlippa.client.config.Settings;
 import com.cuhlippa.client.storage.LocalDatabase;
 import com.cuhlippa.ui.utils.ClipboardItemRenderer;
 import com.cuhlippa.ui.utils.FileTransferable;
 import com.cuhlippa.ui.utils.ImageSelection;
 import com.cuhlippa.ui.utils.ImageUtils;
-import com.cuhlippa.client.clipboard.ClipboardItem;
-import com.cuhlippa.client.clipboard.ClipboardListener;
+import com.cuhlippa.ui.utils.SettingsDialog;
 
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
@@ -36,6 +38,7 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     private static final int PREFERRED_WINDOW_HEIGHT = 600;
 
     private final transient LocalDatabase db;
+    private final transient Settings settings;
     private DefaultListModel<ClipboardItem> listModel;
     private JList<ClipboardItem> itemList;
     private transient List<ClipboardItem> allItems;
@@ -45,20 +48,20 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     private JPanel detailPanel;
     private JTextField searchField;
 
-    public ClipboardUI(LocalDatabase db) {
-        super("Clipboard History");
-        this.db = db;
+    public ClipboardUI(LocalDatabase db, Settings settings) {
+        super("Clipboard History");        this.db = db;
+        this.settings = settings;
         initializeComponents();
         setupLayout();
+        setupMenuBar();
         configureEventListeners();
         configureWindow();
         loadItems();
     }
 
-    private void initializeComponents() {
-        listModel = new DefaultListModel<>();
+    private void initializeComponents() {        listModel = new DefaultListModel<>();
         itemList = new JList<>(listModel);
-        itemList.setCellRenderer(new ClipboardItemRenderer());
+        itemList.setCellRenderer(new ClipboardItemRenderer(settings));
             
         detailArea = new JTextArea(DETAIL_AREA_ROWS, DETAIL_AREA_COLS);
         detailArea.setLineWrap(true);
@@ -277,7 +280,7 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         if (selected != null) {
             int result = JOptionPane.showConfirmDialog(
                 this,
-                "Delete this clipboardItem",
+                "Delete this clipboard item?",
                 "Confirm Delete",
                 JOptionPane.YES_NO_OPTION
             );
@@ -363,5 +366,31 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         Timer timer = new Timer(3000, e -> statusBar.setText(" Ready"));
         timer.setRepeats(false);
         timer.start();
+    }    private void applyTheme() {
+        if ("dark".equals(settings.getTheme())) {
+            getContentPane().setBackground(Color.DARK_GRAY);
+            statusBar.setBackground(Color.DARK_GRAY);
+            statusBar.setForeground(Color.WHITE);
+        } else {
+            getContentPane().setBackground(Color.WHITE);
+            statusBar.setBackground(Color.LIGHT_GRAY);
+            statusBar.setForeground(Color.BLACK);
+        }
+    }private void setupMenuBar() {
+        JMenuBar menuBar = new JMenuBar();
+        JMenu settingsMenu = new JMenu("Settings");
+        JMenuItem preferencesItem = new JMenuItem("Preferences...");
+        preferencesItem.addActionListener(e -> showSettingsDialog());
+        
+        settingsMenu.add(preferencesItem);
+        menuBar.add(settingsMenu);
+        setJMenuBar(menuBar);
+    }
+
+    private void showSettingsDialog() {
+        new SettingsDialog(this, settings).setVisible(true);
+        applyTheme();
+        itemList.setCellRenderer(new ClipboardItemRenderer(settings));
+        repaint();
     }
 }
