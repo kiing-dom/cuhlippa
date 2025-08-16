@@ -2,6 +2,7 @@ package com.cuhlippa.client.storage;
 
 import com.cuhlippa.client.clipboard.ClipboardItem;
 import com.cuhlippa.client.clipboard.ItemType;
+import com.cuhlippa.client.config.Settings;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -34,17 +35,24 @@ public class LocalDatabase {
         }
     }
 
-    public void saveItem(ClipboardItem item) {
+    private void saveItem(Connection conn, ClipboardItem item) throws SQLException {
         String sql = "INSERT OR IGNORE INTO clipboard(type, content, timestamp, hash) VALUES (?, ?, ?, ?)";
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, item.getType().name());
             pstmt.setBytes(2, item.getContent());
             pstmt.setString(3, FORMATTER.format(item.getTimestamp()));
             pstmt.setString(4, item.getHash());
 
             pstmt.executeUpdate();
+        }
+    }    public void saveItemAndUpdateHistory(ClipboardItem item, Settings settings) {
+        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+            conn.setAutoCommit(false);
 
+            saveItem(conn, item);
+            enforceHistoryLimit(conn, settings.getMaxHistoryItems());
+            
+            conn.commit();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -100,5 +108,15 @@ public class LocalDatabase {
             System.err.println("Error deleting items: " + e.getMessage());
             return false;
          }
+    }
+
+    private void enforceHistoryLimit(Connection conn, int maxItems) throws SQLException {
+        String sql = "DELETE FROM clipboard WHERE id NOT IN " +
+            "(SELECT id FROM clipboard ORDER by id DESC LIMIT ?)";
+            
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setInt(1, maxItems);
+                pstmt.executeUpdate();
+        }
     }
 }

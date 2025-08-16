@@ -1,0 +1,11 @@
+{
+  "theme" : "light",
+  "maxHistoryItems" : 200,
+  "thumbnailSize" : 64,
+  "ignorePatterns" : [ ],
+  "sync" : {
+    "enabled" : false,
+    "serverAddress" : "",
+    "encryptionKey" : ""
+  }
+}
