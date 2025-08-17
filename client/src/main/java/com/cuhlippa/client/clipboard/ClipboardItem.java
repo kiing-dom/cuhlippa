@@ -43,6 +43,10 @@ public class ClipboardItem {
         return new HashSet<>(tags);
     }
 
+    public void setTags(Set<String> tags) {
+        this.tags = tags;
+    }
+
     public String getCategory() {
         return category;
     }
