@@ -2,8 +2,6 @@ package com.cuhlippa.ui.utils;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.Arrays;
 
 import com.cuhlippa.client.config.Settings;
@@ -78,13 +76,7 @@ public class SettingsDialog extends JDialog {
         JButton saveButton = new JButton("Save");
         JButton cancelButton = new JButton("Cancel");
 
-        saveButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                saveSettings();
-            }
-        });
-
+        saveButton.addActionListener(e -> saveSettings());
         cancelButton.addActionListener(e -> dispose());
 
         buttonPanel.add(saveButton);
