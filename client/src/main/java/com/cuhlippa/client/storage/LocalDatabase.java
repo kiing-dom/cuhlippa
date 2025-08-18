@@ -12,12 +12,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 
-
-
 public class LocalDatabase {
     private static final String DB_URL = "jdbc:sqlite:cuhlippa.db";
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-    
+
+    private static final int CURRENT_DB_VERSION = 2;
     private static final String COLUMN_CATEGORY = "category";
     private static final String COLUMN_TYPE = "type";
     private static final String COLUMN_CONTENT = "content";
@@ -26,6 +25,7 @@ public class LocalDatabase {
 
     public LocalDatabase() {
         createTableIfNotExists();
+        checkAndMigrateDatabase();
         createTagsTable();
     }
 
@@ -198,8 +198,8 @@ public class LocalDatabase {
         Set<String> tags = new HashSet<>();
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(sql)) {
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
                 tags.add(rs.getString("tag"));
@@ -215,7 +215,7 @@ public class LocalDatabase {
         Set<String> categories = new HashSet<>();
 
         try (Connection conn = DriverManager.getConnection(DB_URL);
-            Statement stmt = conn.createStatement();
+                Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
@@ -293,6 +293,85 @@ public class LocalDatabase {
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, maxItems);
             pstmt.executeUpdate();
+        }
+    }
+
+    private void checkAndMigrateDatabase() {
+        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+            int currentVersion = getDatabaseVersion(conn);
+
+            if (currentVersion < CURRENT_DB_VERSION) {
+                System.out.println("Migrating database from version " + currentVersion + " to " + CURRENT_DB_VERSION);
+                performMigrations(conn, currentVersion);
+                setDatabaseVersion(conn, CURRENT_DB_VERSION);
+                System.out.println("Database migration completed successfully");
+            }
+        } catch (SQLException e) {
+            System.err.println("Migration failed: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private int getDatabaseVersion(Connection conn) throws SQLException {
+        try (Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery("PRAGMA user_version")) {
+            return rs.next() ? rs.getInt(1) : 0;
+        }
+    }
+
+    private void setDatabaseVersion(Connection conn, int version) throws SQLException {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("PRAGMA user_version = " + version);
+        }
+    }
+
+    private void performMigrations(Connection conn, int fromVersion) throws SQLException {
+        conn.setAutoCommit(false);
+
+        try {
+            if (fromVersion < 1) {
+                migrateToVersion1(conn);
+            }
+
+            if (fromVersion < 2) {
+                migrateToVersion2(conn);
+            }
+
+            conn.commit();
+            System.out.println("All migrations applied successfully");
+
+        } catch (SQLException e) {
+            conn.rollback();
+            throw new SQLException("Migration failed, rolling back: " + e.getMessage(), e);
+        } finally {
+            conn.setAutoCommit(true);
+        }
+    }
+
+    private void migrateToVersion1(Connection conn) throws SQLException {
+        try (Statement stmt = conn.createStatement()) {
+            DatabaseMetaData metaData = conn.getMetaData();
+            ResultSet columns = metaData.getColumns(null, null, "clipboard", COLUMN_CATEGORY);
+
+            if (!columns.next()) {
+                stmt.execute("ALTER TABLE clipboard ADD COLUMN category TEXT NOT NULL DEFAULT 'General'");
+                System.out.println("Migration v1: Added category column");
+            }
+            columns.close();
+        }
+    }
+
+    private void migrateToVersion2(Connection conn) throws SQLException {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("""
+                        CREATE TABLE IF NOT EXISTS item_tags (
+                            item_hash TEXT NOT NULL,
+                            tag TEXT NOT NULL,
+                            PRIMARY KEY (item_hash, tag),
+                            FOREIGN KEY (item_hash) REFERENCES clipboard(hash)
+                        )
+                    """);
+            System.out.println("Migration v2: Created item_tags table");
         }
     }
 }
