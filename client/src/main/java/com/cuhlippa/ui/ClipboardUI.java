@@ -49,8 +49,10 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     private JTextField searchField;
 
     public ClipboardUI(LocalDatabase db, Settings settings) {
-        super("Clipboard History");        this.db = db;
-        this.settings = settings;        initializeComponents();
+        super("Cuhlippa");
+        this.db = db;
+        this.settings = settings;        
+        initializeComponents();
         setupLayout();
         setupMenuBar();
         configureEventListeners();
