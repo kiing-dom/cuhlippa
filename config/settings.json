@@ -1,5 +1,5 @@
 {
-  "theme" : "light",
+  "theme" : "dark",
   "maxHistoryItems" : 200,
   "thumbnailSize" : 64,
   "ignorePatterns" : [ ],
