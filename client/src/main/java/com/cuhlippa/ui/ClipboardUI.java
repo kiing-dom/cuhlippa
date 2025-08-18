@@ -14,6 +14,7 @@ import com.cuhlippa.ui.utils.FileTransferable;
 import com.cuhlippa.ui.utils.ImageSelection;
 import com.cuhlippa.ui.utils.ImageUtils;
 import com.cuhlippa.ui.utils.SettingsDialog;
+import com.cuhlippa.ui.utils.TagEditDialog;
 
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
@@ -254,19 +255,32 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
 
             JPopupMenu contextMenu = new JPopupMenu();
             JMenuItem copyItem = new JMenuItem("Copy to Clipboard");
+            JMenuItem editTagsItem = new JMenuItem("Edit Tags");
             JMenuItem deleteItem = new JMenuItem("Delete Item");
             JMenuItem deleteAll = new JMenuItem("Delete All");
 
             copyItem.addActionListener(evt -> handleDoubleClick());
+            editTagsItem.addActionListener(evt -> showTagEditDialog());
             deleteItem.addActionListener(evt -> deleteSelectedItem());
             deleteAll.addActionListener(evt -> deleteAllItems());
 
             contextMenu.add(copyItem);
+            contextMenu.add(editTagsItem);
             contextMenu.addSeparator();
             contextMenu.add(deleteItem);
             contextMenu.add(deleteAll);
 
             contextMenu.show(itemList, e.getX(), e.getY());
+        }
+    }
+
+    private void showTagEditDialog() {
+        ClipboardItem selected = itemList.getSelectedValue();
+        if (selected != null) {
+            TagEditDialog dialog = new TagEditDialog(this, selected, db);
+            dialog.setVisible(false);
+            loadItems();
+            showStatusMessage("Tags updated for item");
         }
     }
 

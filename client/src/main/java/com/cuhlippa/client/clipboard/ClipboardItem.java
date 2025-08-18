@@ -51,6 +51,10 @@ public class ClipboardItem {
         return category;
     }
 
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
     public void addTag(String tag) {
         if (tag != null && !tag.trim().isEmpty()) {
             this.tags.add(tag.trim().toLowerCase());

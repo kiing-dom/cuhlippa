@@ -78,241 +78,252 @@ public class LocalDatabase {
         }
     }
 
+    public void saveItem(ClipboardItem item) {
+        try (Connection conn = DriverManager.getConnection(DB_URL)) {
+            conn.setAutoCommit(false);
+            saveItem(conn, item);
+            conn.commit();
+        } catch (SQLException e) {
+            System.err.println("Error saving item: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
     public void saveItemAndUpdateHistory(ClipboardItem item, Settings settings) {
         try (Connection conn = DriverManager.getConnection(DB_URL)) {
             conn.setAutoCommit(false);
 
-            saveItem(conn, item);
-            enforceHistoryLimit(conn, settings.getMaxHistoryItems());
+                saveItem(conn, item);
+                enforceHistoryLimit(conn, settings.getMaxHistoryItems());
 
-            conn.commit();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void saveTags(String itemHash, Set<String> tags) {
-        try (Connection conn = DriverManager.getConnection(DB_URL)) {
-            deleteOldTags(conn, itemHash);
-            insertNewTags(conn, itemHash, tags);
-        } catch (SQLException e) {
-            System.out.println("Failed to save tags: " + e.getMessage());
-        }
-    }
-
-    private void deleteOldTags(Connection conn, String itemHash) {
-        String sql = "DELETE FROM item_tags WHERE item_hash = ?";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, itemHash);
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
-            System.out.println("Failed to delete old tags: " + e.getMessage());
-        }
-    }
-
-    private void insertNewTags(Connection conn, String itemHash, Set<String> tags) {
-        String sql = "INSERT INTO item_tags (item_hash, tag) VALUES (?, ?)";
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, itemHash);
-            for (String tag : tags) {
-                pstmt.setString(2, tag);
-                pstmt.addBatch();
+                conn.commit();
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
-            pstmt.executeBatch();
-        } catch (SQLException e) {
-            System.out.println("Unable to insert new tags: " + e.getMessage());
         }
-    }
 
-    public List<ClipboardItem> getAllItems() {
-        List<ClipboardItem> items = new ArrayList<>();
-
-        String sql = "SELECT type, content, timestamp, hash, category FROM clipboard ORDER by id DESC";
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-                Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(sql)) {
-
-            while (rs.next()) {
-                ItemType type = ItemType.valueOf(rs.getString(COLUMN_TYPE));
-                byte[] content = rs.getBytes(COLUMN_CONTENT);
-                LocalDateTime timestamp = LocalDateTime.parse(rs.getString(COLUMN_TIMESTAMP));
-                String hash = rs.getString(COLUMN_HASH);
-                Set<String> tags = loadTagsForItem(hash);
-                String category = rs.getString(COLUMN_CATEGORY);
-
-                items.add(new ClipboardItem(type, content, timestamp, hash, tags, category));
+        private void saveTags(String itemHash, Set<String> tags) {
+            try (Connection conn = DriverManager.getConnection(DB_URL)) {
+                deleteOldTags(conn, itemHash);
+                insertNewTags(conn, itemHash, tags);
+            } catch (SQLException e) {
+                System.out.println("Failed to save tags: " + e.getMessage());
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
 
-        return items;
-    }
-
-    public List<ClipboardItem> getItemsByTag(String tag) {
-        String sql = """
-                    SELECT DISTINCT c.* from clipboard c
-                    JOIN item_tags it ON c.hash = it.item_hash
-                    WHERE it.tag = ?
-                    ORDER by c.timestamp DESC
-                """;
-        List<ClipboardItem> items = new ArrayList<>();
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, tag.toLowerCase());
-            ResultSet rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                ClipboardItem item = createItemFromResultSet(rs);
-                items.add(item);
+        private void deleteOldTags(Connection conn, String itemHash) {
+            String sql = "DELETE FROM item_tags WHERE item_hash = ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, itemHash);
+                pstmt.executeUpdate();
+            } catch (SQLException e) {
+                System.out.println("Failed to delete old tags: " + e.getMessage());
             }
-        } catch (SQLException e) {
-            System.out.println("Failed to get items: " + e.getMessage());
         }
 
-        return items;
-    }
-
-    public List<ClipboardItem> getItemsByCategory(String category) {
-        String sql = "SELECT type, content, timestamp, hash, category FROM clipboard WHERE category = ?";
-
-        List<ClipboardItem> items = new ArrayList<>();
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, category);
-            ResultSet rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                ClipboardItem item = createItemFromResultSet(rs);
-                items.add(item);
+        private void insertNewTags(Connection conn, String itemHash, Set<String> tags) {
+            String sql = "INSERT INTO item_tags (item_hash, tag) VALUES (?, ?)";
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, itemHash);
+                for (String tag : tags) {
+                    pstmt.setString(2, tag);
+                    pstmt.addBatch();
+                }
+                pstmt.executeBatch();
+            } catch (SQLException e) {
+                System.out.println("Unable to insert new tags: " + e.getMessage());
             }
-        } catch (SQLException e) {
-            System.out.println("Failed to get items: " + e.getMessage());
         }
 
-        return items;
-    }
+        public List<ClipboardItem> getAllItems() {
+            List<ClipboardItem> items = new ArrayList<>();
 
-    public Set<String> getAllTags() {
-        String sql = "SELECT DISTINCT tag FROM item_tags ORDER BY tag";
-        Set<String> tags = new HashSet<>();
+            String sql = "SELECT type, content, timestamp, hash, category FROM clipboard ORDER by id DESC";
+            try (Connection conn = DriverManager.getConnection(DB_URL);
+                    Statement stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery(sql)) {
 
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-                Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(sql)) {
+                while (rs.next()) {
+                    ItemType type = ItemType.valueOf(rs.getString(COLUMN_TYPE));
+                    byte[] content = rs.getBytes(COLUMN_CONTENT);
+                    LocalDateTime timestamp = LocalDateTime.parse(rs.getString(COLUMN_TIMESTAMP));
+                    String hash = rs.getString(COLUMN_HASH);
+                    Set<String> tags = loadTagsForItem(hash);
+                    String category = rs.getString(COLUMN_CATEGORY);
 
-            while (rs.next()) {
-                tags.add(rs.getString("tag"));
+                    items.add(new ClipboardItem(type, content, timestamp, hash, tags, category));
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
-        } catch (SQLException e) {
-            System.err.println("Error getting all tags: " + e.getMessage());
+
+            return items;
         }
-        return tags;
-    }
 
-    public Set<String> getAllCategories() {
-        String sql = "SELECT DISTINCT category FROM clipboard ORDER BY category";
-        Set<String> categories = new HashSet<>();
+        public List<ClipboardItem> getItemsByTag(String tag) {
+            String sql = """
+                        SELECT DISTINCT c.* from clipboard c
+                        JOIN item_tags it ON c.hash = it.item_hash
+                        WHERE it.tag = ?
+                        ORDER by c.timestamp DESC
+                    """;
+            List<ClipboardItem> items = new ArrayList<>();
+            try (Connection conn = DriverManager.getConnection(DB_URL);
+                    PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, tag.toLowerCase());
+                ResultSet rs = pstmt.executeQuery();
 
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-                Statement stmt = conn.createStatement();
-                ResultSet rs = stmt.executeQuery(sql)) {
-
-            while (rs.next()) {
-                categories.add(rs.getString(COLUMN_CATEGORY));
+                while (rs.next()) {
+                    ClipboardItem item = createItemFromResultSet(rs);
+                    items.add(item);
+                }
+            } catch (SQLException e) {
+                System.out.println("Failed to get items: " + e.getMessage());
             }
-        } catch (SQLException e) {
-            System.err.println("Error getting all categories: " + e.getMessage());
+
+            return items;
         }
-        return categories;
-    }
 
-    private Set<String> loadTagsForItem(String itemHash) {
-        String sql = "SELECT tag FROM item_tags WHERE item_hash = ?";
-        Set<String> tags = new HashSet<>();
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, itemHash);
-            ResultSet rs = pstmt.executeQuery();
+        public List<ClipboardItem> getItemsByCategory(String category) {
+            String sql = "SELECT type, content, timestamp, hash, category FROM clipboard WHERE category = ?";
 
-            while (rs.next()) {
-                tags.add(rs.getString("tag"));
+            List<ClipboardItem> items = new ArrayList<>();
+            try (Connection conn = DriverManager.getConnection(DB_URL);
+                    PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, category);
+                ResultSet rs = pstmt.executeQuery();
+
+                while (rs.next()) {
+                    ClipboardItem item = createItemFromResultSet(rs);
+                    items.add(item);
+                }
+            } catch (SQLException e) {
+                System.out.println("Failed to get items: " + e.getMessage());
             }
-        } catch (SQLException e) {
-            System.out.println("Failed to load tags: " + e.getMessage());
+
+            return items;
         }
 
-        return tags;
-    }
+        public Set<String> getAllTags() {
+            String sql = "SELECT DISTINCT tag FROM item_tags ORDER BY tag";
+            Set<String> tags = new HashSet<>();
 
-    public boolean deleteItemByHash(String hash) {
-        String sql = "DELETE FROM clipboard WHERE hash = ?";
+            try (Connection conn = DriverManager.getConnection(DB_URL);
+                    Statement stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery(sql)) {
 
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, hash);
-            int rowsAffected = pstmt.executeUpdate();
-            return rowsAffected > 0;
-        } catch (SQLException e) {
-            System.err.println("Error deleting item: " + e.getMessage());
-            return false;
-        }
-    }
-
-    public boolean deleteAllItems() {
-        String sql = "DELETE FROM clipboard";
-
-        try (Connection conn = DriverManager.getConnection(DB_URL);
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            int rowsAffected = pstmt.executeUpdate();
-            System.out.println("Deleted " + rowsAffected + " items from clipboard");
-
-            return true;
-        } catch (SQLException e) {
-            System.err.println("Error deleting items: " + e.getMessage());
-            return false;
-        }
-    }
-
-    private ClipboardItem createItemFromResultSet(ResultSet rs) throws SQLException {
-        ItemType type = ItemType.valueOf(rs.getString(COLUMN_TYPE));
-        byte[] content = rs.getBytes(COLUMN_CONTENT);
-        LocalDateTime timestamp = LocalDateTime.parse(rs.getString(COLUMN_TIMESTAMP));
-        String hash = rs.getString(COLUMN_HASH);
-        String category = rs.getString(COLUMN_CATEGORY);
-
-        Set<String> tags = loadTagsForItem(hash);
-
-        return new ClipboardItem(type, content, timestamp, hash, tags, category);
-    }
-
-    private void enforceHistoryLimit(Connection conn, int maxItems) throws SQLException {
-        String sql = "DELETE FROM clipboard WHERE id NOT IN " +
-                "(SELECT id FROM clipboard ORDER by id DESC LIMIT ?)";
-
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setInt(1, maxItems);
-            pstmt.executeUpdate();
-        }
-    }
-
-    private void checkAndMigrateDatabase() {
-        try (Connection conn = DriverManager.getConnection(DB_URL)) {
-            int currentVersion = getDatabaseVersion(conn);
-
-            if (currentVersion < CURRENT_DB_VERSION) {
-                System.out.println("Migrating database from version " + currentVersion + " to " + CURRENT_DB_VERSION);
-                performMigrations(conn, currentVersion);
-                setDatabaseVersion(conn, CURRENT_DB_VERSION);
-                System.out.println("Database migration completed successfully");
+                while (rs.next()) {
+                    tags.add(rs.getString("tag"));
+                }
+            } catch (SQLException e) {
+                System.err.println("Error getting all tags: " + e.getMessage());
             }
-        } catch (SQLException e) {
-            System.err.println("Migration failed: " + e.getMessage());
-            e.printStackTrace();
+            return tags;
         }
-    }
 
-    private int getDatabaseVersion(Connection conn) throws SQLException {
+        public Set<String> getAllCategories() {
+            String sql = "SELECT DISTINCT category FROM clipboard ORDER BY category";
+            Set<String> categories = new HashSet<>();
+
+            try (Connection conn = DriverManager.getConnection(DB_URL);
+                    Statement stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery(sql)) {
+
+                while (rs.next()) {
+                    categories.add(rs.getString(COLUMN_CATEGORY));
+                }
+            } catch (SQLException e) {
+                System.err.println("Error getting all categories: " + e.getMessage());
+            }
+            return categories;
+        }
+
+        private Set<String> loadTagsForItem(String itemHash) {
+            String sql = "SELECT tag FROM item_tags WHERE item_hash = ?";
+            Set<String> tags = new HashSet<>();
+            try (Connection conn = DriverManager.getConnection(DB_URL);
+                    PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, itemHash);
+                ResultSet rs = pstmt.executeQuery();
+
+                while (rs.next()) {
+                    tags.add(rs.getString("tag"));
+                }
+            } catch (SQLException e) {
+                System.out.println("Failed to load tags: " + e.getMessage());
+            }
+
+            return tags;
+        }
+
+        public boolean deleteItemByHash(String hash) {
+            String sql = "DELETE FROM clipboard WHERE hash = ?";
+
+            try (Connection conn = DriverManager.getConnection(DB_URL);
+                    PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, hash);
+                int rowsAffected = pstmt.executeUpdate();
+                return rowsAffected > 0;
+            } catch (SQLException e) {
+                System.err.println("Error deleting item: " + e.getMessage());
+                return false;
+            }
+        }
+
+        public boolean deleteAllItems() {
+            String sql = "DELETE FROM clipboard";
+
+            try (Connection conn = DriverManager.getConnection(DB_URL);
+                    PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                int rowsAffected = pstmt.executeUpdate();
+                System.out.println("Deleted " + rowsAffected + " items from clipboard");
+
+                return true;
+            } catch (SQLException e) {
+                System.err.println("Error deleting items: " + e.getMessage());
+                return false;
+            }
+        }
+
+        private ClipboardItem createItemFromResultSet(ResultSet rs) throws SQLException {
+            ItemType type = ItemType.valueOf(rs.getString(COLUMN_TYPE));
+            byte[] content = rs.getBytes(COLUMN_CONTENT);
+            LocalDateTime timestamp = LocalDateTime.parse(rs.getString(COLUMN_TIMESTAMP));
+            String hash = rs.getString(COLUMN_HASH);
+            String category = rs.getString(COLUMN_CATEGORY);
+
+            Set<String> tags = loadTagsForItem(hash);
+
+            return new ClipboardItem(type, content, timestamp, hash, tags, category);
+        }
+
+        private void enforceHistoryLimit(Connection conn, int maxItems) throws SQLException {
+            String sql = "DELETE FROM clipboard WHERE id NOT IN " +
+                    "(SELECT id FROM clipboard ORDER by id DESC LIMIT ?)";
+
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setInt(1, maxItems);
+                pstmt.executeUpdate();
+            }
+        }
+
+        private void checkAndMigrateDatabase() {
+            try (Connection conn = DriverManager.getConnection(DB_URL)) {
+                int currentVersion = getDatabaseVersion(conn);
+
+                if (currentVersion < CURRENT_DB_VERSION) {
+                    System.out.println("Migrating database from version " + currentVersion + " to " + CURRENT_DB_VERSION);
+                    performMigrations(conn, currentVersion);
+                    setDatabaseVersion(conn, CURRENT_DB_VERSION);
+                    System.out.println("Database migration completed successfully");
+                }
+            } catch (SQLException e) {
+                System.err.println("Migration failed: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+
+        private int getDatabaseVersion(Connection conn) throws SQLException {
         try (Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery("PRAGMA user_version")) {
             return rs.next() ? rs.getInt(1) : 0;

@@ -21,12 +21,14 @@ import java.io.File;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class ClipboardManager implements ClipboardOwner {
     private final LocalDatabase db;
     private final Clipboard systemClipboard;
     private final List<ClipboardListener> listeners = new ArrayList<>();
     private final Settings settings;
+    private static final String CATEGORY_GENERAL = "General";
 
     public ClipboardManager(LocalDatabase db, Settings settings) {
         this.db = db;
@@ -67,7 +69,7 @@ public class ClipboardManager implements ClipboardOwner {
 
                 byte[] contentBytes = data.getBytes();
                 String hash = sha256(contentBytes);
-                ClipboardItem item = new ClipboardItem(ItemType.TEXT, contentBytes, LocalDateTime.now(), hash);
+                ClipboardItem item = new ClipboardItem(ItemType.TEXT, contentBytes, LocalDateTime.now(), hash, new HashSet<>(), CATEGORY_GENERAL);
                 db.saveItemAndUpdateHistory(item, settings);
                 notifyListeners(item);
                 System.out.println("Saved new text item to clipboard: " + data);
@@ -89,7 +91,7 @@ public class ClipboardManager implements ClipboardOwner {
 
                 byte[] contentBytes = baos.toByteArray();
                 String hash = sha256(contentBytes);
-                ClipboardItem item = new ClipboardItem(ItemType.IMAGE, contentBytes, LocalDateTime.now(), hash);
+                ClipboardItem item = new ClipboardItem(ItemType.IMAGE, contentBytes, LocalDateTime.now(), hash, new HashSet<>(), CATEGORY_GENERAL);
                 db.saveItemAndUpdateHistory(item, settings);
                 notifyListeners(item);
                 System.out.println("Saved new image item to clipboard");
@@ -105,7 +107,7 @@ public class ClipboardManager implements ClipboardOwner {
 
                 byte[] contentBytes = sb.toString().getBytes();
                 String hash = sha256(contentBytes);
-                ClipboardItem item = new ClipboardItem(ItemType.FILE_PATH, contentBytes, LocalDateTime.now(), hash);
+                ClipboardItem item = new ClipboardItem(ItemType.FILE_PATH, contentBytes, LocalDateTime.now(), hash, new HashSet<>(), CATEGORY_GENERAL);
                 db.saveItemAndUpdateHistory(item, settings);
                 notifyListeners(item);
                 System.out.println("Saved new file path item(s) to clipboard");
