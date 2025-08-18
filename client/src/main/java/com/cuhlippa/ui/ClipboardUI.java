@@ -272,13 +272,13 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
 
             contextMenu.show(itemList, e.getX(), e.getY());
         }
-    }
-
-    private void showTagEditDialog() {
+    }    private void showTagEditDialog() {
         ClipboardItem selected = itemList.getSelectedValue();
         if (selected != null) {
             TagEditDialog dialog = new TagEditDialog(this, selected, db);
-            dialog.setVisible(false);
+            dialog.setModal(true);
+            dialog.setVisible(true);
+            // Dialog is modal, so this code runs after it's closed
             loadItems();
             showStatusMessage("Tags updated for item");
         }

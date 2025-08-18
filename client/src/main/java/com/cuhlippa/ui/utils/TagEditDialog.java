@@ -27,9 +27,7 @@ public class TagEditDialog extends JDialog {
         loadCurrentData();
         pack();
         setLocationRelativeTo(parent);
-    }
-
-    private void initializeComponents() {
+    }    private void initializeComponents() {
         Set<String> categories = db.getAllCategories();
         categories.add("General");
         categories.add("Work");
@@ -39,6 +37,8 @@ public class TagEditDialog extends JDialog {
 
         categoryCombo = new JComboBox<>(categories.toArray(new String[0]));
         categoryCombo.setEditable(true);
+
+        tagField = new JTextField(20);
 
         tagsPanel = new JPanel();
         tagsPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
