@@ -10,6 +10,7 @@ import com.cuhlippa.client.clipboard.ClipboardListener;
 import com.cuhlippa.client.config.Settings;
 import com.cuhlippa.client.storage.LocalDatabase;
 import com.cuhlippa.ui.utils.ClipboardItemRenderer;
+import com.cuhlippa.ui.utils.ExportImportDialog;
 import com.cuhlippa.ui.utils.FileTransferable;
 import com.cuhlippa.ui.utils.ImageSelection;
 import com.cuhlippa.ui.utils.ImageUtils;
@@ -21,6 +22,8 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
 import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
@@ -52,7 +55,7 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     public ClipboardUI(LocalDatabase db, Settings settings) {
         super("Cuhlippa");
         this.db = db;
-        this.settings = settings;        
+        this.settings = settings;
         initializeComponents();
         setupLayout();
         setupMenuBar();
@@ -62,10 +65,11 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         loadItems();
     }
 
-    private void initializeComponents() {        listModel = new DefaultListModel<>();
+    private void initializeComponents() {
+        listModel = new DefaultListModel<>();
         itemList = new JList<>(listModel);
         itemList.setCellRenderer(new ClipboardItemRenderer(settings));
-            
+
         detailArea = new JTextArea(DETAIL_AREA_ROWS, DETAIL_AREA_COLS);
         detailArea.setLineWrap(true);
         detailArea.setWrapStyleWord(true);
@@ -83,11 +87,19 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         searchField = new JTextField(20);
         searchField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
-            public void insertUpdate(DocumentEvent e) { filterItems(); }
+            public void insertUpdate(DocumentEvent e) {
+                filterItems();
+            }
+
             @Override
-            public void removeUpdate(DocumentEvent e) { filterItems(); }
+            public void removeUpdate(DocumentEvent e) {
+                filterItems();
+            }
+
             @Override
-            public void changedUpdate(DocumentEvent e) { filterItems(); }
+            public void changedUpdate(DocumentEvent e) {
+                filterItems();
+            }
         });
     }
 
@@ -128,8 +140,8 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
             allItems.forEach(listModel::addElement);
         } else {
             allItems.stream()
-                .filter(item -> matchesSearch(item, query))
-                .forEach(listModel::addElement);
+                    .filter(item -> matchesSearch(item, query))
+                    .forEach(listModel::addElement);
         }
 
         showStatusMessage("Found " + listModel.size() + " items");
@@ -138,7 +150,7 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     private boolean matchesSearch(ClipboardItem item, String query) {
         String content = new String(item.getContent()).toLowerCase();
         return content.contains(query) ||
-            item.getType().toString().toLowerCase().contains(query);
+                item.getType().toString().toLowerCase().contains(query);
     }
 
     private void configureEventListeners() {
@@ -238,7 +250,7 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                 deleteSelectedItem();
             }
         });
-        
+
         itemList.getInputMap().put(KeyStroke.getKeyStroke("ctrl shift DELETE"), "deleteAll");
         itemList.getActionMap().put("deleteAll", new AbstractAction() {
             @Override
@@ -272,7 +284,9 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
 
             contextMenu.show(itemList, e.getX(), e.getY());
         }
-    }    private void showTagEditDialog() {
+    }
+
+    private void showTagEditDialog() {
         ClipboardItem selected = itemList.getSelectedValue();
         if (selected != null) {
             TagEditDialog dialog = new TagEditDialog(this, selected, db);
@@ -295,11 +309,10 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         ClipboardItem selected = itemList.getSelectedValue();
         if (selected != null) {
             int result = JOptionPane.showConfirmDialog(
-                this,
-                "Delete this clipboard item?",
-                "Confirm Delete",
-                JOptionPane.YES_NO_OPTION
-            );
+                    this,
+                    "Delete this clipboard item?",
+                    "Confirm Delete",
+                    JOptionPane.YES_NO_OPTION);
 
             if (result == JOptionPane.YES_OPTION) {
                 boolean deleted = db.deleteItemByHash(selected.getHash());
@@ -316,18 +329,17 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     }
 
     private void deleteAllItems() {
-        if(allItems.isEmpty()) {
+        if (allItems.isEmpty()) {
             showStatusMessage("No items to delete.");
             return;
         }
 
         int result = JOptionPane.showConfirmDialog(
-            this,
-            "Delete all clipboard history? This cannot be undone!",
-            "Confirm Delete All",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.WARNING_MESSAGE
-        );
+                this,
+                "Delete all clipboard history? This cannot be undone!",
+                "Confirm Delete All",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
 
         if (result == JOptionPane.YES_OPTION) {
             boolean allDeleted = db.deleteAllItems();
@@ -355,16 +367,17 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                 case IMAGE:
                     ByteArrayInputStream bais = new ByteArrayInputStream(item.getContent());
                     BufferedImage img = ImageIO.read(bais);
-                    if (img != null) transferable = new ImageSelection(img);
+                    if (img != null)
+                        transferable = new ImageSelection(img);
                     showStatusMessage("Image copied to clipboard");
                     break;
                 case FILE_PATH:
                     String path = new String(item.getContent());
                     File file = new File(path);
-                    if(file.exists()) {
+                    if (file.exists()) {
                         transferable = new FileTransferable(Collections.singletonList(file));
                     }
-                        showStatusMessage("File path copied to clipboard");
+                    showStatusMessage("File path copied to clipboard");
                     break;
             }
             if (transferable != null) {
@@ -381,63 +394,61 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
 
         Timer timer = new Timer(3000, e -> statusBar.setText(" Ready"));
         timer.setRepeats(false);
-        timer.start();    }
+        timer.start();
+    }
 
     private void applyTheme() {
         ThemeColors colors = getThemeColors();
         applyMainComponentColors(colors);
         applyContainerColors(colors);
         applyMenuBarColors(colors);
-        
+
         SwingUtilities.updateComponentTreeUI(this);
         repaint();
     }
-    
+
     private ThemeColors getThemeColors() {
         if ("dark".equals(settings.getTheme())) {
             return new ThemeColors(
-                new Color(45, 45, 45),
-                Color.WHITE,
-                new Color(60, 60, 60),
-                new Color(70, 70, 70)
-            );
+                    new Color(45, 45, 45),
+                    Color.WHITE,
+                    new Color(60, 60, 60),
+                    new Color(70, 70, 70));
         } else {
             return new ThemeColors(
-                Color.WHITE,
-                Color.BLACK,
-                new Color(245, 245, 245),
-                new Color(230, 230, 230)
-            );
+                    Color.WHITE,
+                    Color.BLACK,
+                    new Color(245, 245, 245),
+                    new Color(230, 230, 230));
         }
     }
-    
+
     private void applyMainComponentColors(ThemeColors colors) {
         getContentPane().setBackground(colors.background);
-        
+
         statusBar.setBackground(colors.panel);
         statusBar.setForeground(colors.foreground);
         statusBar.setOpaque(true);
-        
+
         itemList.setBackground(colors.background);
         itemList.setForeground(colors.foreground);
         itemList.setSelectionBackground(colors.panel);
         itemList.setSelectionForeground(colors.foreground);
-        
+
         detailArea.setBackground(colors.background);
         detailArea.setForeground(colors.foreground);
         detailArea.setCaretColor(colors.foreground);
-        
+
         searchField.setBackground(colors.background);
         searchField.setForeground(colors.foreground);
         searchField.setCaretColor(colors.foreground);
         searchField.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(colors.panel, 1),
-            BorderFactory.createEmptyBorder(2, 5, 2, 5)
-        ));
-        
+                BorderFactory.createLineBorder(colors.panel, 1),
+                BorderFactory.createEmptyBorder(2, 5, 2, 5)));
+
         detailPanel.setBackground(colors.background);
     }
-    
+
     private void applyContainerColors(ThemeColors colors) {
         Container contentPane = getContentPane();
         for (Component comp : contentPane.getComponents()) {
@@ -447,7 +458,7 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
             }
         }
     }
-    
+
     private void applyMenuBarColors(ThemeColors colors) {
         if (getJMenuBar() != null) {
             getJMenuBar().setBackground(colors.panel);
@@ -460,12 +471,12 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
             }
         }
     }
-    
+
     private void setComponentColors(Container container, ThemeColors colors) {
         for (Component comp : container.getComponents()) {
             comp.setBackground(colors.background);
             comp.setForeground(colors.foreground);
-            
+
             if (comp instanceof JButton button) {
                 button.setBackground(colors.button);
                 button.setOpaque(true);
@@ -482,31 +493,41 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                     scrollPane.getHorizontalScrollBar().setBackground(colors.background);
                 }
             }
-            
+
             if (comp instanceof Container container1) {
                 setComponentColors(container1, colors);
             }
         }
     }
-    
+
     private static class ThemeColors {
         final Color background;
         final Color foreground;
         final Color panel;
         final Color button;
-        
+
         ThemeColors(Color background, Color foreground, Color panel, Color button) {
             this.background = background;
             this.foreground = foreground;
             this.panel = panel;
             this.button = button;
         }
-    }private void setupMenuBar() {
+    }
+
+    private void setupMenuBar() {
         JMenuBar menuBar = new JMenuBar();
+        JMenu fileMenu = new JMenu("File");
+        JMenuItem exportImportItem = new JMenuItem("Export/Import...");
+        exportImportItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E, InputEvent.CTRL_DOWN_MASK));
+        exportImportItem.addActionListener(e -> showExportImportDialog());
+
+        fileMenu.add(exportImportItem);
+        menuBar.add(fileMenu);
+
         JMenu settingsMenu = new JMenu("Settings");
         JMenuItem preferencesItem = new JMenuItem("Preferences...");
         preferencesItem.addActionListener(e -> showSettingsDialog());
-        
+
         settingsMenu.add(preferencesItem);
         menuBar.add(settingsMenu);
         setJMenuBar(menuBar);
@@ -517,5 +538,12 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         applyTheme();
         itemList.setCellRenderer(new ClipboardItemRenderer(settings));
         repaint();
+    }
+
+    private void showExportImportDialog() {
+        ExportImportDialog dialog = new ExportImportDialog(this, db);
+        dialog.setVisible(true);
+        loadItems();
+        showStatusMessage("Export/Import dialog closed");
     }
 }
