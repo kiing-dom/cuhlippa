@@ -87,10 +87,8 @@ public class ExportClipboardItem {
         export.tags = item.getTags();
         export.category = item.getCategory();
         return export;
-    }
-
-    public ClipboardItem toClipboardItem() {
+    }    public ClipboardItem toClipboardItem() {
         byte[] decodedContent = Base64.getDecoder().decode(content);
-        return new ClipboardItem(type, decodedContent, timestamp, hash, tags, category);
+        return new ClipboardItem(type, decodedContent, timestamp, hash, tags, category, false);
     }
 }

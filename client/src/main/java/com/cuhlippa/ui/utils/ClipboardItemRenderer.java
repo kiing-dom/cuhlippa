@@ -24,21 +24,29 @@ public class ClipboardItemRenderer extends JLabel implements ListCellRenderer<Cl
             BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY),
             BorderFactory.createEmptyBorder(5, 10, 5, 10)
         ));
-    }
-
-    @Override
-    public Component getListCellRendererComponent(JList<? extends ClipboardItem> list, ClipboardItem item, int index, boolean isSelected, boolean cellHashFocus) {        try {
+    }    @Override
+    public Component getListCellRendererComponent(JList<? extends ClipboardItem> list, ClipboardItem item, int index, boolean isSelected, boolean cellHashFocus) {        
+        try {
+            String displayText = "";
+            
             if (item.getType() == ItemType.IMAGE) {
-                setText("[IMAGE]");
+                displayText = "[IMAGE]";
                 int size = settings.getThumbnailSize();
                 setIcon(ImageUtils.createScaledImageIcon(item.getContent(), size, size));
             } else if (item.getType() == ItemType.TEXT) {
                 setIcon(null);
-                setText(item.toString());
+                displayText = item.toString();
             } else if (item.getType() == ItemType.FILE_PATH) {
                 setIcon(null);
-                setText("[FILE] " + item.toString());
+                displayText = "[FILE] " + item.toString();
             }
+            
+            // Add pin indicator
+            if (item.isPinned()) {
+                displayText = "📌 " + displayText;
+            }
+            
+            setText(displayText);
 
             if  (isSelected) {
                 setBackground(list.getSelectionBackground());

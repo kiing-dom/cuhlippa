@@ -63,13 +63,12 @@ public class ClipboardManager implements ClipboardOwner {
     private void processClipboard() {
         Transferable t = systemClipboard.getContents(this);
         try {
-            if (t != null && t.isDataFlavorSupported(DataFlavor.stringFlavor)) {
-                String data = (String) t.getTransferData(DataFlavor.stringFlavor);
+            if (t != null && t.isDataFlavorSupported(DataFlavor.stringFlavor)) {                String data = (String) t.getTransferData(DataFlavor.stringFlavor);
                 if (shouldIgnoreContent(data)) return;
-
+                
                 byte[] contentBytes = data.getBytes();
                 String hash = sha256(contentBytes);
-                ClipboardItem item = new ClipboardItem(ItemType.TEXT, contentBytes, LocalDateTime.now(), hash, new HashSet<>(), CATEGORY_GENERAL);
+                ClipboardItem item = new ClipboardItem(ItemType.TEXT, contentBytes, LocalDateTime.now(), hash, new HashSet<>(), CATEGORY_GENERAL, false);
                 db.saveItemAndUpdateHistory(item, settings);
                 notifyListeners(item);
                 System.out.println("Saved new text item to clipboard: " + data);
@@ -87,11 +86,9 @@ public class ClipboardManager implements ClipboardOwner {
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ImageIO.write(bufferedImage, "png", baos);
-                baos.flush();
-
-                byte[] contentBytes = baos.toByteArray();
+                baos.flush();                byte[] contentBytes = baos.toByteArray();
                 String hash = sha256(contentBytes);
-                ClipboardItem item = new ClipboardItem(ItemType.IMAGE, contentBytes, LocalDateTime.now(), hash, new HashSet<>(), CATEGORY_GENERAL);
+                ClipboardItem item = new ClipboardItem(ItemType.IMAGE, contentBytes, LocalDateTime.now(), hash, new HashSet<>(), CATEGORY_GENERAL, false);
                 db.saveItemAndUpdateHistory(item, settings);
                 notifyListeners(item);
                 System.out.println("Saved new image item to clipboard");
@@ -101,13 +98,12 @@ public class ClipboardManager implements ClipboardOwner {
                 List<File> fileList = (List<File>) t.getTransferData(DataFlavor.javaFileListFlavor);
                 StringBuilder sb = new StringBuilder();
                 for (File file : fileList) {
-                    sb.append(file.getAbsolutePath()).append("\n");
-                }
+                    sb.append(file.getAbsolutePath()).append("\n");                }
                 if (shouldIgnoreContent(sb.toString())) return;
 
                 byte[] contentBytes = sb.toString().getBytes();
                 String hash = sha256(contentBytes);
-                ClipboardItem item = new ClipboardItem(ItemType.FILE_PATH, contentBytes, LocalDateTime.now(), hash, new HashSet<>(), CATEGORY_GENERAL);
+                ClipboardItem item = new ClipboardItem(ItemType.FILE_PATH, contentBytes, LocalDateTime.now(), hash, new HashSet<>(), CATEGORY_GENERAL, false);
                 db.saveItemAndUpdateHistory(item, settings);
                 notifyListeners(item);
                 System.out.println("Saved new file path item(s) to clipboard");

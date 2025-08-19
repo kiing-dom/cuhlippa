@@ -14,14 +14,13 @@ import java.util.HashSet;
 
 public class LocalDatabase {
     private static final String DB_URL = "jdbc:sqlite:cuhlippa.db";
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-
-    private static final int CURRENT_DB_VERSION = 2;
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;    private static final int CURRENT_DB_VERSION = 3;
     private static final String COLUMN_CATEGORY = "category";
     private static final String COLUMN_TYPE = "type";
     private static final String COLUMN_CONTENT = "content";
     private static final String COLUMN_TIMESTAMP = "timestamp";
     private static final String COLUMN_HASH = "hash";
+    private static final String COLUMN_PINNED = "pinned";
 
     public LocalDatabase() {
         createTableIfNotExists();
@@ -62,16 +61,15 @@ public class LocalDatabase {
         } catch (SQLException e) {
             System.out.println("Failed to create tags table: " + e.getMessage());
         }
-    }
-
-    private void saveItem(Connection conn, ClipboardItem item) throws SQLException {
-        String sql = "INSERT OR IGNORE INTO clipboard(type, content, timestamp, hash, category) VALUES (?, ?, ?, ?, ?)";
+    }    private void saveItem(Connection conn, ClipboardItem item) throws SQLException {
+        String sql = "INSERT OR IGNORE INTO clipboard(type, content, timestamp, hash, category, pinned) VALUES (?, ?, ?, ?, ?, ?)";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, item.getType().name());
             pstmt.setBytes(2, item.getContent());
             pstmt.setString(3, FORMATTER.format(item.getTimestamp()));
             pstmt.setString(4, item.getHash());
             pstmt.setString(5, item.getCategory());
+            pstmt.setBoolean(6, item.isPinned());
 
             pstmt.executeUpdate();
             saveTags(item.getHash(), item.getTags());
@@ -133,12 +131,10 @@ public class LocalDatabase {
         } catch (SQLException e) {
             System.out.println("Unable to insert new tags: " + e.getMessage());
         }
-    }
-
-    public List<ClipboardItem> getAllItems() {
+    }    public List<ClipboardItem> getAllItems() {
         List<ClipboardItem> items = new ArrayList<>();
 
-        String sql = "SELECT type, content, timestamp, hash, category FROM clipboard ORDER by id DESC";
+        String sql = "SELECT type, content, timestamp, hash, category, pinned FROM clipboard ORDER by id DESC";
         try (Connection conn = DriverManager.getConnection(DB_URL);
                 Statement stmt = conn.createStatement();
                 ResultSet rs = stmt.executeQuery(sql)) {
@@ -148,19 +144,17 @@ public class LocalDatabase {
                 byte[] content = rs.getBytes(COLUMN_CONTENT);
                 LocalDateTime timestamp = LocalDateTime.parse(rs.getString(COLUMN_TIMESTAMP));
                 String hash = rs.getString(COLUMN_HASH);
-                Set<String> tags = loadTagsForItem(hash);
-                String category = rs.getString(COLUMN_CATEGORY);
+                Set<String> tags = loadTagsForItem(hash);                String category = rs.getString(COLUMN_CATEGORY);
+                boolean pinned = rs.getBoolean(COLUMN_PINNED);
 
-                items.add(new ClipboardItem(type, content, timestamp, hash, tags, category));
+                items.add(new ClipboardItem(type, content, timestamp, hash, tags, category, pinned));
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
         return items;
-    }
-
-    public List<ClipboardItem> getItemsByTag(String tag) {
+    }    public List<ClipboardItem> getItemsByTag(String tag) {
         String sql = """
                     SELECT DISTINCT c.* from clipboard c
                     JOIN item_tags it ON c.hash = it.item_hash
@@ -182,10 +176,8 @@ public class LocalDatabase {
         }
 
         return items;
-    }
-
-    public List<ClipboardItem> getItemsByCategory(String category) {
-        String sql = "SELECT type, content, timestamp, hash, category FROM clipboard WHERE category = ?";
+    }    public List<ClipboardItem> getItemsByCategory(String category) {
+        String sql = "SELECT type, content, timestamp, hash, category, pinned FROM clipboard WHERE category = ?";
 
         List<ClipboardItem> items = new ArrayList<>();
         try (Connection conn = DriverManager.getConnection(DB_URL);
@@ -296,27 +288,35 @@ public class LocalDatabase {
             System.err.println("Error deleting items: " + e.getMessage());
             return false;
         }
-    }
-
-    private ClipboardItem createItemFromResultSet(ResultSet rs) throws SQLException {
+    }    private ClipboardItem createItemFromResultSet(ResultSet rs) throws SQLException {
         ItemType type = ItemType.valueOf(rs.getString(COLUMN_TYPE));
         byte[] content = rs.getBytes(COLUMN_CONTENT);
         LocalDateTime timestamp = LocalDateTime.parse(rs.getString(COLUMN_TIMESTAMP));
-        String hash = rs.getString(COLUMN_HASH);
-        String category = rs.getString(COLUMN_CATEGORY);
+        String hash = rs.getString(COLUMN_HASH);        String category = rs.getString(COLUMN_CATEGORY);
+        boolean pinned = rs.getBoolean(COLUMN_PINNED);
 
         Set<String> tags = loadTagsForItem(hash);
 
-        return new ClipboardItem(type, content, timestamp, hash, tags, category);
-    }
-
-    private void enforceHistoryLimit(Connection conn, int maxItems) throws SQLException {
-        String sql = "DELETE FROM clipboard WHERE id NOT IN " +
-                "(SELECT id FROM clipboard ORDER by id DESC LIMIT ?)";
+        return new ClipboardItem(type, content, timestamp, hash, tags, category, pinned);
+    }private void enforceHistoryLimit(Connection conn, int maxItems) throws SQLException {
+        // Don't delete pinned items - only delete unpinned items beyond the limit
+        String sql = """
+            DELETE FROM clipboard 
+            WHERE pinned = FALSE 
+            AND id NOT IN (
+                SELECT id FROM clipboard 
+                WHERE pinned = FALSE 
+                ORDER BY id DESC 
+                LIMIT ?
+            )
+        """;
 
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, maxItems);
-            pstmt.executeUpdate();
+            int deletedRows = pstmt.executeUpdate();
+            if (deletedRows > 0) {
+                System.out.println("Deleted " + deletedRows + " items to enforce history limit (preserved pinned items)");
+            }
         }
     }
 
@@ -353,12 +353,21 @@ public class LocalDatabase {
         conn.setAutoCommit(false);
 
         try {
-            if (fromVersion < 1) {
-                migrateToVersion1(conn);
-            }
-
-            if (fromVersion < 2) {
-                migrateToVersion2(conn);
+            switch (fromVersion) {
+                case 0:
+                    migrateToVersion1(conn);
+                    System.out.println("Applied migration to version 1");
+                    // fall through                case 1:
+                    migrateToVersion2(conn);
+                    System.out.println("Applied migration to version 2");
+                    // fall through
+                case 2:
+                    migrateToVersion3(conn);
+                    System.out.println("Applied migration to version 3");
+                    // fall through
+                default:
+                    // All migrations complete
+                    break;
             }
 
             conn.commit();
@@ -398,4 +407,67 @@ public class LocalDatabase {
             System.out.println("Migration v2: Created item_tags table");
         }
     }
+
+    private void migrateToVersion3(Connection conn) throws SQLException {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE clipboard ADD COLUMN pinned BOOLEAN NOT NULL DEFAULT FALSE");
+            System.out.println("Migration v3: Added pinned column");
+        }
+    }    public boolean toggleItemPin(String hash) {
+        String sql = "UPDATE clipboard SET pinned = NOT pinned WHERE hash = ?";
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, hash);
+            int rowsAffected = pstmt.executeUpdate();
+            
+            if (rowsAffected > 0) {
+                System.out.println("Successfully toggled pin status for item: " + hash);
+                return true;
+            } else {
+                System.out.println("No item found with hash: " + hash);
+                return false;
+            }
+        } catch (SQLException e) {
+            System.err.println("Failed to toggle item pin: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean isItemPinned(String hash) {
+        String sql = "SELECT pinned FROM clipboard WHERE hash = ?";
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, hash);
+            ResultSet rs = pstmt.executeQuery();
+            
+            if (rs.next()) {
+                return rs.getBoolean("pinned");
+            }
+            return false; // Item not found, so not pinned
+        } catch (SQLException e) {
+            System.err.println("Failed to check pin status: " + e.getMessage());
+            return false;
+        }
+    }    public List<ClipboardItem> getPinnedItems() {
+        List<ClipboardItem> items = new ArrayList<>();
+        String sql = "SELECT type, content, timestamp, hash, category, pinned FROM clipboard WHERE pinned = TRUE ORDER BY timestamp DESC";
+        
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                ClipboardItem item = createItemFromResultSet(rs);
+                items.add(item);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error getting pinned items: " + e.getMessage());
+        }
+
+        return items;
+    }
+
+    
 }
