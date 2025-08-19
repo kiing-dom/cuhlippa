@@ -258,26 +258,32 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                 deleteAllItems();
             }
         });
-    }
-
-    private void showContextMenu(MouseEvent e) {
+    }    private void showContextMenu(MouseEvent e) {
         int index = itemList.locationToIndex(e.getPoint());
         if (index >= 0) {
             itemList.setSelectedIndex(index);
+            ClipboardItem selectedItem = itemList.getSelectedValue();
 
             JPopupMenu contextMenu = new JPopupMenu();
             JMenuItem copyItem = new JMenuItem("Copy to Clipboard");
             JMenuItem editTagsItem = new JMenuItem("Edit Tags");
+            
+            // Pin/Unpin menu item
+            boolean isPinned = selectedItem != null && selectedItem.isPinned();
+            JMenuItem pinItem = new JMenuItem(isPinned ? "Unpin Item" : "Pin Item");
+            
             JMenuItem deleteItem = new JMenuItem("Delete Item");
             JMenuItem deleteAll = new JMenuItem("Delete All");
 
             copyItem.addActionListener(evt -> handleDoubleClick());
             editTagsItem.addActionListener(evt -> showTagEditDialog());
+            pinItem.addActionListener(evt -> toggleItemPin());
             deleteItem.addActionListener(evt -> deleteSelectedItem());
             deleteAll.addActionListener(evt -> deleteAllItems());
 
             contextMenu.add(copyItem);
             contextMenu.add(editTagsItem);
+            contextMenu.add(pinItem);
             contextMenu.addSeparator();
             contextMenu.add(deleteItem);
             contextMenu.add(deleteAll);
@@ -545,5 +551,24 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         dialog.setVisible(true);
         loadItems();
         showStatusMessage("Export/Import dialog closed");
+    }
+
+    private void toggleItemPin() {
+        ClipboardItem selected = itemList.getSelectedValue();
+        if (selected != null) {
+            boolean success = db.toggleItemPin(selected.getHash());
+            if (success) {
+                // Update the item's pin status in memory
+                selected.setPinned(!selected.isPinned());
+                
+                String action = selected.isPinned() ? "pinned" : "unpinned";
+                showStatusMessage("Item " + action + " successfully");
+                
+                // Refresh the list to show updated pin status
+                itemList.repaint();
+            } else {
+                showStatusMessage("Failed to toggle pin status");
+            }
+        }
     }
 }

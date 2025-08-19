@@ -13,14 +13,16 @@ public class ClipboardItem {
     private String hash;
     private Set<String> tags;
     private String category;
+    private boolean pinned;
 
-    public ClipboardItem(ItemType type, byte[] content, LocalDateTime timestamp, String hash, Set<String> tags, String category) {
+    public ClipboardItem(ItemType type, byte[] content, LocalDateTime timestamp, String hash, Set<String> tags, String category, boolean pinned) {
         this.type = type;
         this.content = content;
         this.timestamp = timestamp;
         this.hash = hash;
         this.tags = (tags != null) ? new HashSet<>(tags) : new HashSet<>();
         this.category = (category != null && !category.isBlank()) ? category : "General";
+        this.pinned = pinned;
     }
 
     public ItemType getType() {
@@ -70,6 +72,16 @@ public class ClipboardItem {
     public boolean hasTag(String tag) {
         return tags.contains(tag.toLowerCase());
     }
+
+    public boolean isPinned() {
+        return pinned;
+    }
+
+    public void setPinned(boolean pinned) {
+        this.pinned = pinned;
+    }
+
+
 
     @Override
     public boolean equals(Object o) {
