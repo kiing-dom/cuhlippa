@@ -3,18 +3,26 @@ package com.cuhlippa.client.clipboard;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
+import java.util.Set;
+import java.util.HashSet;
 
 public class ClipboardItem {
     private ItemType type;
     private byte[] content;
     private LocalDateTime timestamp;
     private String hash;
+    private Set<String> tags;
+    private String category;
+    private boolean pinned;
 
-    public ClipboardItem(ItemType type, byte[] content, LocalDateTime timestamp, String hash) {
+    public ClipboardItem(ItemType type, byte[] content, LocalDateTime timestamp, String hash, Set<String> tags, String category, boolean pinned) {
         this.type = type;
         this.content = content;
         this.timestamp = timestamp;
         this.hash = hash;
+        this.tags = (tags != null) ? new HashSet<>(tags) : new HashSet<>();
+        this.category = (category != null && !category.isBlank()) ? category : "General";
+        this.pinned = pinned;
     }
 
     public ItemType getType() {
@@ -32,6 +40,48 @@ public class ClipboardItem {
     public String getHash() {
         return hash;
     }
+
+    public Set<String> getTags() {
+        return new HashSet<>(tags);
+    }
+
+    public void setTags(Set<String> tags) {
+        this.tags = tags;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public void addTag(String tag) {
+        if (tag != null && !tag.trim().isEmpty()) {
+            this.tags.add(tag.trim().toLowerCase());
+        }
+    }
+
+    public void removeTag(String tag) {
+        if (this.tags.contains(tag)) {
+            this.tags.remove(tag.toLowerCase());
+        }
+    }
+
+    public boolean hasTag(String tag) {
+        return tags.contains(tag.toLowerCase());
+    }
+
+    public boolean isPinned() {
+        return pinned;
+    }
+
+    public void setPinned(boolean pinned) {
+        this.pinned = pinned;
+    }
+
+
 
     @Override
     public boolean equals(Object o) {
