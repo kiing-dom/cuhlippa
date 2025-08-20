@@ -1,8 +1,11 @@
 package com.cuhlippa.client;
 
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 
 import com.cuhlippa.client.clipboard.ClipboardManager;
+import com.cuhlippa.client.config.Settings;
+import com.cuhlippa.client.config.SettingsManager;
 import com.cuhlippa.client.storage.LocalDatabase;
 import com.cuhlippa.ui.ClipboardUI;
 
@@ -12,11 +15,18 @@ public class Main {
     private Main() {
         // Private constructor to prevent instantiation
     }
-    
-    public static void main(String[] args) {
+      public static void main(String[] args) {        try {
+            UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        SettingsManager.loadSettings();
+        Settings settings = SettingsManager.getSettings();
+
         LocalDatabase db = new LocalDatabase();
-        ClipboardManager cm = new ClipboardManager(db);
-        ClipboardUI ui = new ClipboardUI(db);
+        ClipboardManager cm = new ClipboardManager(db, settings);
+        ClipboardUI ui = new ClipboardUI(db, settings);
 
         cm.addClipboardListener(ui);
         System.out.println("Starting clipboard listener...");
