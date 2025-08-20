@@ -48,7 +48,8 @@ public class ClipboardManager implements ClipboardOwner {
     @Override
     public void lostOwnership(Clipboard c, Transferable t) {
         try {
-            //TODO: implement retry instead of using sleep. e.g. try to read 5 times before backing off
+            // TODO: implement retry instead of using sleep. e.g. try to read 5 times before
+            // backing off
             Thread.sleep(200);
             processClipboard();
         } catch (InterruptedException e) {
@@ -63,12 +64,15 @@ public class ClipboardManager implements ClipboardOwner {
     private void processClipboard() {
         Transferable t = systemClipboard.getContents(this);
         try {
-            if (t != null && t.isDataFlavorSupported(DataFlavor.stringFlavor)) {                String data = (String) t.getTransferData(DataFlavor.stringFlavor);
-                if (shouldIgnoreContent(data)) return;
-                
+            if (t != null && t.isDataFlavorSupported(DataFlavor.stringFlavor)) {
+                String data = (String) t.getTransferData(DataFlavor.stringFlavor);
+                if (shouldIgnoreContent(data))
+                    return;
+
                 byte[] contentBytes = data.getBytes();
                 String hash = sha256(contentBytes);
-                ClipboardItem item = new ClipboardItem(ItemType.TEXT, contentBytes, LocalDateTime.now(), hash, new HashSet<>(), CATEGORY_GENERAL, false);
+                ClipboardItem item = new ClipboardItem(ItemType.TEXT, contentBytes, LocalDateTime.now(), hash,
+                        new HashSet<>(), CATEGORY_GENERAL, false);
                 db.saveItemAndUpdateHistory(item, settings);
                 notifyListeners(item);
                 System.out.println("Saved new text item to clipboard: " + data);
@@ -76,19 +80,20 @@ public class ClipboardManager implements ClipboardOwner {
             if (t != null && t.isDataFlavorSupported(DataFlavor.imageFlavor)) {
                 Image image = (Image) t.getTransferData(DataFlavor.imageFlavor);
                 BufferedImage bufferedImage = new BufferedImage(
-                    image.getWidth(null),
-                    image.getHeight(null),
-                    BufferedImage.TYPE_INT_ARGB
-                );
+                        image.getWidth(null),
+                        image.getHeight(null),
+                        BufferedImage.TYPE_INT_ARGB);
                 Graphics2D g2d = bufferedImage.createGraphics();
                 g2d.drawImage(image, 0, 0, null);
                 g2d.dispose();
 
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ImageIO.write(bufferedImage, "png", baos);
-                baos.flush();                byte[] contentBytes = baos.toByteArray();
+                baos.flush();
+                byte[] contentBytes = baos.toByteArray();
                 String hash = sha256(contentBytes);
-                ClipboardItem item = new ClipboardItem(ItemType.IMAGE, contentBytes, LocalDateTime.now(), hash, new HashSet<>(), CATEGORY_GENERAL, false);
+                ClipboardItem item = new ClipboardItem(ItemType.IMAGE, contentBytes, LocalDateTime.now(), hash,
+                        new HashSet<>(), CATEGORY_GENERAL, false);
                 db.saveItemAndUpdateHistory(item, settings);
                 notifyListeners(item);
                 System.out.println("Saved new image item to clipboard");
@@ -98,12 +103,15 @@ public class ClipboardManager implements ClipboardOwner {
                 List<File> fileList = (List<File>) t.getTransferData(DataFlavor.javaFileListFlavor);
                 StringBuilder sb = new StringBuilder();
                 for (File file : fileList) {
-                    sb.append(file.getAbsolutePath()).append("\n");                }
-                if (shouldIgnoreContent(sb.toString())) return;
+                    sb.append(file.getAbsolutePath()).append("\n");
+                }
+                if (shouldIgnoreContent(sb.toString()))
+                    return;
 
                 byte[] contentBytes = sb.toString().getBytes();
                 String hash = sha256(contentBytes);
-                ClipboardItem item = new ClipboardItem(ItemType.FILE_PATH, contentBytes, LocalDateTime.now(), hash, new HashSet<>(), CATEGORY_GENERAL, false);
+                ClipboardItem item = new ClipboardItem(ItemType.FILE_PATH, contentBytes, LocalDateTime.now(), hash,
+                        new HashSet<>(), CATEGORY_GENERAL, false);
                 db.saveItemAndUpdateHistory(item, settings);
                 notifyListeners(item);
                 System.out.println("Saved new file path item(s) to clipboard");
@@ -130,8 +138,8 @@ public class ClipboardManager implements ClipboardOwner {
 
     private boolean shouldIgnoreContent(String content) {
         return settings.getIgnorePatterns().stream()
-            .map(Pattern::compile)
-            .anyMatch(p -> p.matcher(content).find());
+                .map(Pattern::compile)
+                .anyMatch(p -> p.matcher(content).find());
     }
 
     public void addClipboardListener(ClipboardListener listener) {
