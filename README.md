@@ -7,7 +7,7 @@
 
 > **A sophisticated, multi-device clipboard synchronization system built with modern Java technologies and enterprise-grade architecture.**
 
-Cuhlippa is a distributed clipboard management platform that enables real-time synchronization of clipboard content across multiple devices on a local network. Built with **Spring Boot WebSocket** technology and a **multi-module Maven architecture**, it demonstrates advanced software engineering principles and scalable system design.
+Cuhlippa is a distributed clipboard management platform that enables real-time synchronization of clipboard content across multiple devices on a local network. Built with **Spring Boot WebSocket** technology and a **multi-module Maven architecture**.
 
 ## 🏗️ Architecture & Design
 
