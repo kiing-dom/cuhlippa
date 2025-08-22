@@ -16,9 +16,8 @@ public class ClipboardItemDTO {
 
     @JsonProperty("content")
     private String content;
-
     @JsonProperty("timestamp")
-    @JsonFormat(pattern = "yyyy-mm-dd'T'HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime timestamp;
 
     @JsonProperty("hash")
@@ -108,5 +107,5 @@ public class ClipboardItemDTO {
 
     public void setDeviceId(String deviceId) {
         this.deviceId = deviceId;
-    }   
+    }
 }
