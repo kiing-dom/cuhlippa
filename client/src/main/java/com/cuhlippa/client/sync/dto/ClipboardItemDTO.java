@@ -17,7 +17,7 @@ public class ClipboardItemDTO {
     @JsonProperty("content")
     private String content;
     @JsonProperty("timestamp")
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm")
     private LocalDateTime timestamp;
 
     @JsonProperty("hash")
