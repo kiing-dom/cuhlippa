@@ -4,7 +4,7 @@
   "thumbnailSize" : 64,
   "ignorePatterns" : [ ],  "sync" : {
     "enabled" : true,
-    "serverAddress" : "ws://localhost:8080/sync",
+    "serverAddress" : "ws://192.168.178.40:8080/sync",
     "encryptionKey" : ""
   }
 }
