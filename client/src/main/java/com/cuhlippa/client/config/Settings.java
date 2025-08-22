@@ -12,7 +12,7 @@ public class Settings {
     
     public static class SyncSettings {
         private boolean enabled = false;
-        private String serverAddress = "";
+        private String serverAddress = "ws://localhost:8080/sync";
         private String encryptionKey = "";
 
         public boolean isEnabled() { return enabled; }

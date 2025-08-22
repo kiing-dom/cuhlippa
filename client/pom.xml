@@ -16,8 +16,14 @@
     
     <name>Cuhlippa Client</name>
     <description>Desktop clipboard manager client</description>
-    
-    <dependencies>
+      <dependencies>
+        <!-- Shared utilities -->
+        <dependency>
+            <groupId>com.cuhlippa</groupId>
+            <artifactId>cuhlippa-shared</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        
         <!-- Your existing dependencies -->
         <dependency>
             <groupId>org.xerial</groupId>

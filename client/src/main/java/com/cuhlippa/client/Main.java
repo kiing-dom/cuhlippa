@@ -7,20 +7,23 @@ import com.cuhlippa.client.clipboard.ClipboardManager;
 import com.cuhlippa.client.config.Settings;
 import com.cuhlippa.client.config.SettingsManager;
 import com.cuhlippa.client.storage.LocalDatabase;
+import com.cuhlippa.client.sync.SyncManager;
 import com.cuhlippa.ui.ClipboardUI;
 
 public class Main {
     private static volatile boolean running = true;
-    
+
     private Main() {
         // Private constructor to prevent instantiation
     }
-      public static void main(String[] args) {        try {
+
+    public static void main(String[] args) {
+        try {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
+
         SettingsManager.loadSettings();
         Settings settings = SettingsManager.getSettings();
 
@@ -28,7 +31,12 @@ public class Main {
         ClipboardManager cm = new ClipboardManager(db, settings);
         ClipboardUI ui = new ClipboardUI(db, settings);
 
+        SyncManager syncManager = new SyncManager(db, settings);
+
         cm.addClipboardListener(ui);
+        cm.addClipboardListener(syncManager);
+
+        syncManager.initialize();
         System.out.println("Starting clipboard listener...");
         cm.startListening();
 
@@ -38,6 +46,7 @@ public class Main {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("Shutting down...");
+            syncManager.shutdown();
             running = false;
         }));
 
@@ -52,5 +61,5 @@ public class Main {
         }
 
         System.out.println("Clipboard listener stopped");
-    }    
+    }
 }

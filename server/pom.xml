@@ -16,8 +16,14 @@
     
     <name>Cuhlippa Sync Server</name>
     <description>WebSocket-based sync server for clipboard data</description>
-    
-    <dependencies>
+      <dependencies>
+        <!-- Shared utilities -->
+        <dependency>
+            <groupId>com.cuhlippa</groupId>
+            <artifactId>cuhlippa-shared</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
