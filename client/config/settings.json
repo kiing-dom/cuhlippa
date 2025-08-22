@@ -2,9 +2,8 @@
   "theme" : "light",
   "maxHistoryItems" : 200,
   "thumbnailSize" : 64,
-  "ignorePatterns" : [ ],
-  "sync" : {
-    "enabled" : false,
+  "ignorePatterns" : [ ],  "sync" : {
+    "enabled" : true,
     "serverAddress" : "ws://localhost:8080/sync",
     "encryptionKey" : ""
   }

@@ -69,12 +69,15 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
     @Override
     public void onError(String error) {
         System.err.println("Sync error: " + error);
-    }
-
-    @Override
+    }    @Override
     public void onClipboardItemAdded(ClipboardItem item) {
-        if (!isInitialized || syncClient == null || !syncClient.isOpen())
+        System.out.println("SyncManager: onClipboardItemAdded called for: " + new String(item.getContent()).substring(0, Math.min(50, item.getContent().length)));
+        System.out.println("SyncManager: isInitialized=" + isInitialized + ", syncClient=" + (syncClient != null ? "not null" : "null") + ", isOpen=" + (syncClient != null ? syncClient.isOpen() : "N/A"));
+        
+        if (!isInitialized || syncClient == null || !syncClient.isOpen()) {
+            System.out.println("SyncManager: Sync not ready - skipping send");
             return;
+        }
 
         ClipboardItemDTO dto = ClipboardItemDTO.fromClipboardItem(item, deviceId);
         if (!settings.getSync().getEncryptionKey().isEmpty()) {
@@ -82,6 +85,7 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
             dto.setContent(encrypted);
         }
 
+        System.out.println("SyncManager: Attempting to send item to sync server...");
         syncClient.sendItem(dto)
             .thenRun(() -> System.out.println("Sent to sync server"))
             .exceptionally(t -> {

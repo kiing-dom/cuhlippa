@@ -50,12 +50,10 @@ public class SyncClient extends WebSocketClient {
             System.err.println("Failed to parse sync message: " + e.getMessage());
             messageListener.onError("Failed to parse message: " + e.getMessage());
         }
-    }
-
-    @Override
+    }    @Override
     public void onClose(int code, String reason, boolean remote) {
         System.out.println("Disconnected from sync server: " + reason);
-        messageListener.onConnected();
+        messageListener.onDisconnected();
 
         if (shouldReconnect && remote) {
             scheduleReconnect();
