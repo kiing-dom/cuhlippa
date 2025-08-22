@@ -89,3 +89,4 @@ nbbuild/
 dist/
 nbdist/
 .nb-gradle/
+server/src/main/resources/application.properties
