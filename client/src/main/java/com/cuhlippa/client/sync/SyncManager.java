@@ -69,7 +69,9 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
     @Override
     public void onError(String error) {
         System.err.println("Sync error: " + error);
-    }    @Override
+    }
+
+    @Override
     public void onClipboardItemAdded(ClipboardItem item) {
         if (!isInitialized || syncClient == null || !syncClient.isOpen())
             return;
