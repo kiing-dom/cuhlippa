@@ -2,6 +2,8 @@ package com.cuhlippa.client.sync;
 
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
+import java.util.List;
+import java.util.ArrayList;
 
 import com.cuhlippa.client.clipboard.ClipboardItem;
 import com.cuhlippa.client.clipboard.ClipboardListener;
@@ -16,11 +18,22 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
     private final String deviceId;
     private SyncClient syncClient;
     private boolean isInitialized = false;
+    private final List<ClipboardListener> listeners = new ArrayList<>();
 
     public SyncManager(LocalDatabase db, Settings settings) {
         this.db = db;
         this.settings = settings;
         this.deviceId = DeviceManager.getDeviceId();
+    }
+
+    public void addClipboardListener(ClipboardListener listener) {
+        listeners.add(listener);
+    }
+
+    private void notifyListeners(ClipboardItem item) {
+        for (ClipboardListener listener : listeners) {
+            listener.onClipboardItemAdded(item);
+        }
     }
 
     public void initialize() {
@@ -35,9 +48,7 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
         } catch (Exception e) {
             System.out.println("Failed to initialize sync: " + e.getMessage());
         }
-    }
-
-    @Override
+    }    @Override
     public void onItemReceived(ClipboardItemDTO dto) {
         try {
             if (deviceId.equals(dto.getDeviceId())) return;
@@ -50,6 +61,9 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
             if (!db.itemExistsByHash(item.getHash())) {
                 db.saveItem(item);
                 System.out.println("Saved sync item from: " + dto.getDeviceId());
+                
+                // Notify UI and other listeners that a new item was received
+                notifyListeners(item);
             }
         } catch (Exception e) {
             System.err.println("Failed to process sync item: " + e.getMessage());

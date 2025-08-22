@@ -22,19 +22,20 @@ public class Main {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
         } catch (Exception e) {
             e.printStackTrace();
-        }
-
-        SettingsManager.loadSettings();
+        }        SettingsManager.loadSettings();
         Settings settings = SettingsManager.getSettings();
-
+        
         LocalDatabase db = new LocalDatabase();
         ClipboardManager cm = new ClipboardManager(db, settings);
         ClipboardUI ui = new ClipboardUI(db, settings);
-
+        
         SyncManager syncManager = new SyncManager(db, settings);
 
         cm.addClipboardListener(ui);
         cm.addClipboardListener(syncManager);
+        
+        // Also register UI to receive notifications when sync items are received
+        syncManager.addClipboardListener(ui);
 
         syncManager.initialize();
         System.out.println("Starting clipboard listener...");
