@@ -50,8 +50,13 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
         }
     }    @Override
     public void onItemReceived(ClipboardItemDTO dto) {
+        System.out.println("SyncManager received item from device: " + dto.getDeviceId());
         try {
-            if (deviceId.equals(dto.getDeviceId())) return;
+            if (deviceId.equals(dto.getDeviceId())) {
+                System.out.println("Ignoring item from own device: " + deviceId);
+                return;
+            }
+            
             if (!settings.getSync().getEncryptionKey().isEmpty()) {
                 String decrypted = EncryptionService.decrypt(dto.getContent(), settings.getSync().getEncryptionKey());
                 dto.setContent(decrypted);
@@ -63,10 +68,14 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
                 System.out.println("Saved sync item from: " + dto.getDeviceId());
                 
                 // Notify UI and other listeners that a new item was received
+                System.out.println("Notifying " + listeners.size() + " listeners about new sync item");
                 notifyListeners(item);
+            } else {
+                System.out.println("Item already exists, skipping: " + item.getHash());
             }
         } catch (Exception e) {
             System.err.println("Failed to process sync item: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
