@@ -2,9 +2,12 @@ package com.cuhlippa.client.sync;
 
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
+import java.util.List;
+import java.util.ArrayList;
 
 import com.cuhlippa.client.clipboard.ClipboardItem;
 import com.cuhlippa.client.clipboard.ClipboardListener;
+import com.cuhlippa.client.clipboard.ItemType;
 import com.cuhlippa.client.config.DeviceManager;
 import com.cuhlippa.client.config.Settings;
 import com.cuhlippa.client.storage.LocalDatabase;
@@ -16,11 +19,23 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
     private final String deviceId;
     private SyncClient syncClient;
     private boolean isInitialized = false;
+    private final List<ClipboardListener> listeners = new ArrayList<>();
+    private volatile boolean processingSync = false;
 
     public SyncManager(LocalDatabase db, Settings settings) {
         this.db = db;
         this.settings = settings;
         this.deviceId = DeviceManager.getDeviceId();
+    }
+
+    public void addClipboardListener(ClipboardListener listener) {
+        listeners.add(listener);
+    }
+
+    private void notifyListeners(ClipboardItem item) {
+        for (ClipboardListener listener : listeners) {
+            listener.onClipboardItemAdded(item);
+        }
     }
 
     public void initialize() {
@@ -35,12 +50,15 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
         } catch (Exception e) {
             System.out.println("Failed to initialize sync: " + e.getMessage());
         }
-    }
-
-    @Override
+    }    @Override
     public void onItemReceived(ClipboardItemDTO dto) {
+        System.out.println("SyncManager received item from device: " + dto.getDeviceId());
         try {
-            if (deviceId.equals(dto.getDeviceId())) return;
+            if (deviceId.equals(dto.getDeviceId())) {
+                System.out.println("Ignoring item from own device: " + deviceId);
+                return;
+            }
+            
             if (!settings.getSync().getEncryptionKey().isEmpty()) {
                 String decrypted = EncryptionService.decrypt(dto.getContent(), settings.getSync().getEncryptionKey());
                 dto.setContent(decrypted);
@@ -48,11 +66,24 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
 
             ClipboardItem item = dto.toClipboardItem();
             if (!db.itemExistsByHash(item.getHash())) {
-                db.saveItem(item);
-                System.out.println("Saved sync item from: " + dto.getDeviceId());
+                // Set flag to prevent triggering sync when we notify listeners
+                processingSync = true;
+                try {
+                    db.saveItem(item);
+                    System.out.println("Saved sync item from: " + dto.getDeviceId());
+                    
+                    // Notify UI and other listeners that a new item was received
+                    System.out.println("Notifying " + listeners.size() + " listeners about new sync item");
+                    notifyListeners(item);
+                } finally {
+                    processingSync = false;
+                }
+            } else {
+                System.out.println("Item already exists, skipping: " + item.getHash());
             }
         } catch (Exception e) {
             System.err.println("Failed to process sync item: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -69,12 +100,25 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
     @Override
     public void onError(String error) {
         System.err.println("Sync error: " + error);
-    }
-
-    @Override
+    }    @Override
     public void onClipboardItemAdded(ClipboardItem item) {
+        // Skip if we're currently processing a sync item to prevent infinite loop
+        if (processingSync) {
+            System.out.println("Skipping clipboard event - currently processing sync");
+            return;
+        }
+        
         if (!isInitialized || syncClient == null || !syncClient.isOpen())
             return;
+
+        // Skip large images to prevent WebSocket buffer overflow
+        if (item.getType() == ItemType.IMAGE) {
+            byte[] content = item.getContent();
+            if (content.length > 512 * 1024) {  // 512KB limit
+                System.out.println("Skipping large image (" + content.length + " bytes) - too big for sync");
+                return;
+            }
+        }
 
         ClipboardItemDTO dto = ClipboardItemDTO.fromClipboardItem(item, deviceId);
         if (!settings.getSync().getEncryptionKey().isEmpty()) {

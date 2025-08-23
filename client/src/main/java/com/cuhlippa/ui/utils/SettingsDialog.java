@@ -13,6 +13,12 @@ public class SettingsDialog extends JDialog {
     private JTextField thumbnailSizeField;
     private JComboBox<String> themeCombo;
     private JTextArea ignorePatternsArea;
+    
+    // Sync settings components
+    private JCheckBox enableSyncCheckBox;
+    private JTextField syncServerField;
+    private JTextField encryptionKeyField;
+    private JButton autoDetectButton;
 
     public SettingsDialog(JFrame parent, Settings settings) {
         super(parent, "Settings", true);
@@ -22,55 +28,141 @@ public class SettingsDialog extends JDialog {
         setupLayout();
         pack();
         setLocationRelativeTo(parent);
-    }
-
-    private void initializeComponents() {
+    }    private void initializeComponents() {
         maxHistoryField = new JTextField(10);
         thumbnailSizeField = new JTextField(10);
         themeCombo = new JComboBox<>(new String[]{"light", "dark"});
         ignorePatternsArea = new JTextArea(5, 30);
         ignorePatternsArea.setLineWrap(true);
         ignorePatternsArea.setWrapStyleWord(true);
-    }
-
-    private void loadCurrentSettings() {
+        
+        // Sync components
+        enableSyncCheckBox = new JCheckBox("Enable Sync");
+        syncServerField = new JTextField(25);
+        encryptionKeyField = new JTextField(25);
+        autoDetectButton = new JButton("Auto-Detect");
+        
+        // Auto-detect button action
+        autoDetectButton.addActionListener(e -> {
+            try {
+                // Use reflection to call NetworkUtils.buildDefaultSyncUrl()
+                Class<?> networkUtilsClass = Class.forName("com.cuhlippa.shared.config.NetworkUtils");
+                String defaultUrl = (String) networkUtilsClass.getMethod("buildDefaultSyncUrl").invoke(null);
+                syncServerField.setText(defaultUrl);
+                JOptionPane.showMessageDialog(this, "Auto-detected server: " + defaultUrl, 
+                                            "Auto-Detection", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                syncServerField.setText("ws://localhost:8080/sync");
+                JOptionPane.showMessageDialog(this, "Auto-detection failed. Using default: ws://localhost:8080/sync", 
+                                            "Auto-Detection", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+        
+        // Enable/disable sync fields based on checkbox
+        enableSyncCheckBox.addActionListener(e -> {
+            boolean enabled = enableSyncCheckBox.isSelected();
+            syncServerField.setEnabled(enabled);
+            encryptionKeyField.setEnabled(enabled);
+            autoDetectButton.setEnabled(enabled);
+        });
+    }    private void loadCurrentSettings() {
         maxHistoryField.setText(String.valueOf(settings.getMaxHistoryItems()));
         thumbnailSizeField.setText(String.valueOf(settings.getThumbnailSize()));
         themeCombo.setSelectedItem(settings.getTheme());
         ignorePatternsArea.setText(String.join("\n", settings.getIgnorePatterns()));
-    }
-
-    private void setupLayout() {
+        
+        // Load sync settings
+        enableSyncCheckBox.setSelected(settings.getSync().isEnabled());
+        syncServerField.setText(settings.getSync().getServerAddress());
+        encryptionKeyField.setText(settings.getSync().getEncryptionKey());
+        
+        // Update field states based on sync enabled
+        boolean syncEnabled = settings.getSync().isEnabled();
+        syncServerField.setEnabled(syncEnabled);
+        encryptionKeyField.setEnabled(syncEnabled);
+        autoDetectButton.setEnabled(syncEnabled);
+    }    private void setupLayout() {
         setLayout(new BorderLayout());
 
-        JPanel mainPanel = new JPanel(new GridBagLayout());
+        JTabbedPane tabbedPane = new JTabbedPane();
+        
+        // General Settings Tab
+        JPanel generalPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
 
         gbc.gridx = 0; gbc.gridy = 0;
-        mainPanel.add(new JLabel("Theme:"), gbc);
+        generalPanel.add(new JLabel("Theme:"), gbc);
         gbc.gridx = 1;
-        mainPanel.add(themeCombo, gbc);
+        generalPanel.add(themeCombo, gbc);
 
         gbc.gridx = 0; gbc.gridy = 1;
-        mainPanel.add(new JLabel("Max History Items:"), gbc);
+        generalPanel.add(new JLabel("Max History Items:"), gbc);
         gbc.gridx = 1;
-        mainPanel.add(maxHistoryField, gbc);
+        generalPanel.add(maxHistoryField, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2;
-        mainPanel.add(new JLabel("Thumbnail Size:"), gbc);
+        generalPanel.add(new JLabel("Thumbnail Size:"), gbc);
         gbc.gridx = 1;
-        mainPanel.add(thumbnailSizeField, gbc);
+        generalPanel.add(thumbnailSizeField, gbc);
 
         gbc.gridx = 0; gbc.gridy = 3;
         gbc.anchor = GridBagConstraints.NORTHWEST;
-        mainPanel.add(new JLabel("Ignore Patterns:"), gbc);
+        generalPanel.add(new JLabel("Ignore Patterns:"), gbc);
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.BOTH;
         gbc.weightx = 1.0;
         gbc.weighty = 1.0;
-        mainPanel.add(new JScrollPane(ignorePatternsArea), gbc);
+        generalPanel.add(new JScrollPane(ignorePatternsArea), gbc);
+        
+        // Sync Settings Tab
+        JPanel syncPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints syncGbc = new GridBagConstraints();
+        syncGbc.insets = new Insets(10, 10, 5, 10);
+        syncGbc.anchor = GridBagConstraints.WEST;
+
+        syncGbc.gridx = 0; syncGbc.gridy = 0;
+        syncGbc.gridwidth = 2;
+        syncPanel.add(enableSyncCheckBox, syncGbc);
+
+        syncGbc.gridx = 0; syncGbc.gridy = 1;
+        syncGbc.gridwidth = 1;
+        syncGbc.insets = new Insets(15, 10, 5, 10);
+        syncPanel.add(new JLabel("Server Address:"), syncGbc);
+        syncGbc.gridx = 1;
+        syncGbc.fill = GridBagConstraints.HORIZONTAL;
+        syncGbc.weightx = 1.0;
+        syncPanel.add(syncServerField, syncGbc);
+
+        syncGbc.gridx = 0; syncGbc.gridy = 2;
+        syncGbc.fill = GridBagConstraints.NONE;
+        syncGbc.weightx = 0;
+        syncPanel.add(new JLabel(""), syncGbc); // Spacer
+        syncGbc.gridx = 1;
+        syncPanel.add(autoDetectButton, syncGbc);
+
+        syncGbc.gridx = 0; syncGbc.gridy = 3;
+        syncGbc.insets = new Insets(15, 10, 5, 10);
+        syncPanel.add(new JLabel("Encryption Key:"), syncGbc);
+        syncGbc.gridx = 1;
+        syncGbc.fill = GridBagConstraints.HORIZONTAL;
+        syncGbc.weightx = 1.0;
+        syncPanel.add(encryptionKeyField, syncGbc);
+
+        syncGbc.gridx = 0; syncGbc.gridy = 4;
+        syncGbc.gridwidth = 2;
+        syncGbc.insets = new Insets(10, 10, 5, 10);
+        syncGbc.fill = GridBagConstraints.NONE;
+        syncGbc.weightx = 0;
+        JLabel infoLabel = new JLabel("<html><i>Note: Leave encryption key empty for no encryption.<br>" +
+                                     "Server address format: ws://[server-ip]:8080/sync</i></html>");
+        infoLabel.setFont(infoLabel.getFont().deriveFont(infoLabel.getFont().getSize() - 1.0f));
+        syncPanel.add(infoLabel, syncGbc);
+
+        // Add tabs
+        tabbedPane.addTab("General", generalPanel);
+        tabbedPane.addTab("Sync", syncPanel);
 
         JPanel buttonPanel = new JPanel(new FlowLayout());
         JButton saveButton = new JButton("Save");
@@ -82,11 +174,9 @@ public class SettingsDialog extends JDialog {
         buttonPanel.add(saveButton);
         buttonPanel.add(cancelButton);
 
-        add(mainPanel, BorderLayout.CENTER);
+        add(tabbedPane, BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
-    }
-
-    private void saveSettings() {
+    }    private void saveSettings() {
         try {
             settings.setTheme((String) themeCombo.getSelectedItem());
             settings.setMaxHistoryItems(Integer.parseInt(maxHistoryField.getText()));
@@ -98,8 +188,21 @@ public class SettingsDialog extends JDialog {
             } else {
                 settings.setIgnorePatterns(Arrays.asList(patternsText.split("\n")));
             }
+            
+            // Save sync settings
+            settings.getSync().setEnabled(enableSyncCheckBox.isSelected());
+            settings.getSync().setServerAddress(syncServerField.getText().trim());
+            settings.getSync().setEncryptionKey(encryptionKeyField.getText().trim());
 
             SettingsManager.saveSettings();
+            
+            // Show confirmation message
+            String message = "Settings saved successfully!";
+            if (enableSyncCheckBox.isSelected()) {
+                message += "\n\nSync is now enabled. Please restart the application for sync changes to take effect.";
+            }
+            JOptionPane.showMessageDialog(this, message, "Settings Saved", JOptionPane.INFORMATION_MESSAGE);
+            
             dispose();
         } catch (NumberFormatException e) {
             JOptionPane.showMessageDialog(this, "Please enter valid numbers for history items and thumbnail size.", 

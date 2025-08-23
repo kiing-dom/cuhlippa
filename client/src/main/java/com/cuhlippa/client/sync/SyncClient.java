@@ -39,23 +39,22 @@ public class SyncClient extends WebSocketClient {
     public void onOpen(ServerHandshake handshake) {
         System.out.println("Connected to sync server");
         messageListener.onConnected();
-    }
-
-    @Override
+    }    @Override
     public void onMessage(String message) {
+        System.out.println("Received sync message: " + message.substring(0, Math.min(100, message.length())) + "...");
         try {
             ClipboardItemDTO item = objectMapper.readValue(message, ClipboardItemDTO.class);
+            System.out.println("Successfully parsed clipboard item from device: " + item.getDeviceId());
             messageListener.onItemReceived(item);
         } catch (Exception e) {
             System.err.println("Failed to parse sync message: " + e.getMessage());
+            e.printStackTrace();
             messageListener.onError("Failed to parse message: " + e.getMessage());
         }
-    }
-
-    @Override
+    }@Override
     public void onClose(int code, String reason, boolean remote) {
         System.out.println("Disconnected from sync server: " + reason);
-        messageListener.onConnected();
+        messageListener.onDisconnected();
 
         if (shouldReconnect && remote) {
             scheduleReconnect();
