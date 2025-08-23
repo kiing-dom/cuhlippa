@@ -7,6 +7,7 @@ import java.util.ArrayList;
 
 import com.cuhlippa.client.clipboard.ClipboardItem;
 import com.cuhlippa.client.clipboard.ClipboardListener;
+import com.cuhlippa.client.clipboard.ItemType;
 import com.cuhlippa.client.config.DeviceManager;
 import com.cuhlippa.client.config.Settings;
 import com.cuhlippa.client.storage.LocalDatabase;
@@ -19,6 +20,7 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
     private SyncClient syncClient;
     private boolean isInitialized = false;
     private final List<ClipboardListener> listeners = new ArrayList<>();
+    private volatile boolean processingSync = false;
 
     public SyncManager(LocalDatabase db, Settings settings) {
         this.db = db;
@@ -64,12 +66,18 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
 
             ClipboardItem item = dto.toClipboardItem();
             if (!db.itemExistsByHash(item.getHash())) {
-                db.saveItem(item);
-                System.out.println("Saved sync item from: " + dto.getDeviceId());
-                
-                // Notify UI and other listeners that a new item was received
-                System.out.println("Notifying " + listeners.size() + " listeners about new sync item");
-                notifyListeners(item);
+                // Set flag to prevent triggering sync when we notify listeners
+                processingSync = true;
+                try {
+                    db.saveItem(item);
+                    System.out.println("Saved sync item from: " + dto.getDeviceId());
+                    
+                    // Notify UI and other listeners that a new item was received
+                    System.out.println("Notifying " + listeners.size() + " listeners about new sync item");
+                    notifyListeners(item);
+                } finally {
+                    processingSync = false;
+                }
             } else {
                 System.out.println("Item already exists, skipping: " + item.getHash());
             }
@@ -92,12 +100,25 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
     @Override
     public void onError(String error) {
         System.err.println("Sync error: " + error);
-    }
-
-    @Override
+    }    @Override
     public void onClipboardItemAdded(ClipboardItem item) {
+        // Skip if we're currently processing a sync item to prevent infinite loop
+        if (processingSync) {
+            System.out.println("Skipping clipboard event - currently processing sync");
+            return;
+        }
+        
         if (!isInitialized || syncClient == null || !syncClient.isOpen())
             return;
+
+        // Skip large images to prevent WebSocket buffer overflow
+        if (item.getType() == ItemType.IMAGE) {
+            byte[] content = item.getContent();
+            if (content.length > 512 * 1024) {  // 512KB limit
+                System.out.println("Skipping large image (" + content.length + " bytes) - too big for sync");
+                return;
+            }
+        }
 
         ClipboardItemDTO dto = ClipboardItemDTO.fromClipboardItem(item, deviceId);
         if (!settings.getSync().getEncryptionKey().isEmpty()) {
