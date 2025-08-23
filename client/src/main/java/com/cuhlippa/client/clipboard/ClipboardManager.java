@@ -29,39 +29,43 @@ public class ClipboardManager implements ClipboardOwner {
     private final List<ClipboardListener> listeners = new ArrayList<>();
     private final Settings settings;
     private static final String CATEGORY_GENERAL = "General";
+    private String lastProcessedHash = null;  // Track last processed content to prevent duplicates
 
     public ClipboardManager(LocalDatabase db, Settings settings) {
         this.db = db;
         this.settings = settings;
         this.systemClipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-    }
-
-    public void startListening() {
-        Transferable content = systemClipboard.getContents(this);
-        regainOwnership(content);
+    }    public void startListening() {
+        // Gain clipboard ownership to start monitoring changes
+        Transferable currentContent = systemClipboard.getContents(this);
+        regainOwnership(currentContent);
+        System.out.println("Clipboard manager started - monitoring for NEW changes only");
     }
 
     private void regainOwnership(Transferable t) {
         systemClipboard.setContents(t, this);
-    }
-
-    @Override
+    }    @Override
     public void lostOwnership(Clipboard c, Transferable t) {
-        try {
-            // TODO: implement retry instead of using sleep. e.g. try to read 5 times before
-            // backing off
-            Thread.sleep(200);
-            processClipboard();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            e.printStackTrace();
-            return;
+        // Retry clipboard processing with exponential backoff
+        for (int attempt = 1; attempt <= 3; attempt++) {
+            try {
+                Thread.sleep(50L * attempt); // 50ms, 100ms, 150ms
+                processClipboard();
+                break; // Success, exit retry loop
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                e.printStackTrace();
+                return;
+            } catch (Exception e) {
+                if (attempt == 3) {
+                    System.err.println("Failed to process clipboard after 3 attempts: " + e.getMessage());
+                }
+                // Continue to next attempt
+            }
         }
 
         regainOwnership(systemClipboard.getContents(this));
-    }
-
-    private void processClipboard() {
+    }    private void processClipboard() {
         Transferable t = systemClipboard.getContents(this);
         try {
             if (t != null && t.isDataFlavorSupported(DataFlavor.stringFlavor)) {
@@ -71,6 +75,13 @@ public class ClipboardManager implements ClipboardOwner {
 
                 byte[] contentBytes = data.getBytes();
                 String hash = sha256(contentBytes);
+                
+                // Skip if we've already processed this exact content recently
+                if (hash.equals(lastProcessedHash)) {
+                    return; // Quietly skip duplicates
+                }
+                
+                lastProcessedHash = hash;
                 ClipboardItem item = new ClipboardItem(ItemType.TEXT, contentBytes, LocalDateTime.now(), hash,
                         new HashSet<>(), CATEGORY_GENERAL, false);
                 db.saveItemAndUpdateHistory(item, settings);
@@ -92,6 +103,13 @@ public class ClipboardManager implements ClipboardOwner {
                 baos.flush();
                 byte[] contentBytes = baos.toByteArray();
                 String hash = sha256(contentBytes);
+                
+                // Skip if we've already processed this exact image recently
+                if (hash.equals(lastProcessedHash)) {
+                    return; // Quietly skip duplicates
+                }
+                
+                lastProcessedHash = hash;
                 ClipboardItem item = new ClipboardItem(ItemType.IMAGE, contentBytes, LocalDateTime.now(), hash,
                         new HashSet<>(), CATEGORY_GENERAL, false);
                 db.saveItemAndUpdateHistory(item, settings);
@@ -110,6 +128,13 @@ public class ClipboardManager implements ClipboardOwner {
 
                 byte[] contentBytes = sb.toString().getBytes();
                 String hash = sha256(contentBytes);
+                
+                // Skip if we've already processed this exact file list recently
+                if (hash.equals(lastProcessedHash)) {
+                    return; // Quietly skip duplicates
+                }
+                
+                lastProcessedHash = hash;
                 ClipboardItem item = new ClipboardItem(ItemType.FILE_PATH, contentBytes, LocalDateTime.now(), hash,
                         new HashSet<>(), CATEGORY_GENERAL, false);
                 db.saveItemAndUpdateHistory(item, settings);

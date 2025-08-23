@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.HashSet;
 
 public class LocalDatabase {
-    private static final String DB_URL = "jdbc:sqlite:cuhlippa.db";
+    private static final String DB_URL = "jdbc:sqlite:cuhlippa_" + getProcessId() + ".db";
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private static final int CURRENT_DB_VERSION = 3;
     private static final String COLUMN_CATEGORY = "category";
@@ -22,6 +22,10 @@ public class LocalDatabase {
     private static final String COLUMN_TIMESTAMP = "timestamp";
     private static final String COLUMN_HASH = "hash";
     private static final String COLUMN_PINNED = "pinned";
+
+    private static String getProcessId() {
+        return String.valueOf(ProcessHandle.current().pid());
+    }
 
     public LocalDatabase() {
         createTableIfNotExists();
