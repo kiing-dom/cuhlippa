@@ -15,9 +15,7 @@ public class DeviceManager {
 
     private DeviceManager() {
         // Utility class
-    }
-
-    /**
+    }    /**
      * Get the unique device ID for this installation
      */
     public static String getDeviceId() {
@@ -27,13 +25,20 @@ public class DeviceManager {
         if (deviceFile.exists()) {
             try {
                 cachedDeviceId = Files.readString(Paths.get(DEVICE_ID_FILE)).trim();
-                if (!cachedDeviceId.isEmpty()) return cachedDeviceId;
+                if (!cachedDeviceId.isEmpty()) {
+                    // Add process ID to make each instance unique during testing
+                    String processId = String.valueOf(ProcessHandle.current().pid());
+                    cachedDeviceId = cachedDeviceId + "-" + processId;
+                    return cachedDeviceId;
+                }
             } catch (IOException e) {
                 System.out.println("Failed to read device ID: " + e.getMessage());
             }
         }
 
-        cachedDeviceId = "device-" + UUID.randomUUID().toString().substring(0, 8);
+        // Generate new device ID with process ID for uniqueness
+        String processId = String.valueOf(ProcessHandle.current().pid());
+        cachedDeviceId = "device-" + UUID.randomUUID().toString().substring(0, 8) + "-" + processId;
         saveDeviceId(cachedDeviceId);
         return cachedDeviceId;
     }

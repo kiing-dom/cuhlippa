@@ -90,3 +90,4 @@ dist/
 nbdist/
 .nb-gradle/
 server/src/main/resources/application.properties
+client/config/settings.json
