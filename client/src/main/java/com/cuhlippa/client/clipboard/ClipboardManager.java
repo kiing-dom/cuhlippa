@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
 import java.util.ArrayList;
 import java.util.HashSet;
 
-public class ClipboardManager implements ClipboardOwner {
+public class ClipboardManager implements ClipboardOwner, IClipboardManager {
     private final LocalDatabase db;
     private final Clipboard systemClipboard;
     private final List<ClipboardListener> listeners = new ArrayList<>();

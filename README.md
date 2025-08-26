@@ -105,6 +105,88 @@ java -Xms128m -Xmx256m -jar target/cuhlippa-client-1.0.0.jar
 - **Security**: Optional AES encryption with shared key
 - **Monitoring**: Real-time connection status in UI
 
+## 🎬 Demo Mode - Professional Portfolio Showcase
+
+### **Virtual Clipboard Demonstration**
+
+Cuhlippa includes a sophisticated **Demo Mode** designed for portfolio presentations and technical demonstrations. This mode creates virtual clipboard isolation, allowing you to run multiple clients on the same machine while simulating real cross-device synchronization.
+
+#### **🚀 Quick Demo Launch**
+```powershell
+# One-click demo launcher (Windows Batch)
+./demo-mode.bat
+
+# PowerShell demo launcher
+./demo-mode.ps1
+
+# Manual demo launch
+java -cp client/target/classes;client/target/dependency/* com.cuhlippa.client.Main --demo-mode --device-name="Device-A"
+java -cp client/target/classes;client/target/dependency/* com.cuhlippa.client.Main --demo-mode --device-name="Device-B"
+
+# Build project first (if needed)
+mvn clean compile
+```
+
+#### **✨ Demo Mode Features**
+- 🎯 **Virtual Clipboard Isolation** - Each demo client has its own virtual clipboard, preventing system interference
+- 🏷️ **Device-Specific Labeling** - Content is tagged with originating device for clear visualization
+- 🎨 **Professional Demo UI** - Enhanced interface with demo indicators and interactive controls
+- 🔄 **Real-Time Sync Simulation** - Demonstrates actual network synchronization between virtual devices
+- 📱 **Multi-Instance Support** - Run unlimited demo clients simultaneously
+
+#### **🎪 Interactive Demo Controls**
+
+Each demo client provides interactive controls for realistic demonstration:
+
+| **Demo Feature** | **Functionality** | **Use Case** |
+|------------------|-------------------|--------------|
+| **Text Input & Copy** | Manual text entry with instant sync | Demonstrate text synchronization |
+| **Sample Image Generation** | Device-specific colored images with timestamps | Show image handling capabilities |
+| **Paste Simulation** | Virtual paste operations | Display received content visualization |
+| **Device Identification** | Clear device naming and color coding | Multi-device scenario clarity |
+
+#### **🎯 Command Line Options**
+
+```bash
+# Demo mode with custom device name (both formats supported)
+java com.cuhlippa.client.Main --demo-mode --device-name="Laptop-Demo"
+java com.cuhlippa.client.Main --demo-mode --device-name=Desktop-Demo
+
+# Display help and all options
+java com.cuhlippa.client.Main --help
+
+# Normal operation (default)
+java com.cuhlippa.client.Main
+```
+
+**Enhanced Argument Parser** ✨
+- Supports both space-separated (`--device-name "Device Name"`) and equals (`--device-name=DeviceName`) formats
+- Flexible argument parsing with comprehensive error handling and validation
+- Professional command-line interface with detailed help documentation
+
+#### **📋 Demo Instructions**
+
+1. **Launch Demo**: Run `demo-mode.bat` to start two demo clients automatically
+2. **Copy Content**: Use the demo controls in each window to copy text, images, or files
+3. **Observe Sync**: Watch real-time synchronization between the virtual devices
+4. **Professional Presentation**: Showcase enterprise-grade clipboard sync without system interference
+
+#### **🏆 Professional Benefits**
+
+- **Portfolio Demonstrations**: Perfect for technical interviews and client presentations
+- **Development Testing**: Safe testing environment without affecting system clipboard
+- **Feature Showcase**: Highlights real-time synchronization capabilities
+- **Multi-Device Simulation**: Demonstrates enterprise scalability on a single machine
+
+#### **🔧 Technical Implementation**
+
+Demo mode utilizes advanced software engineering principles:
+
+- **Virtual Clipboard Abstraction**: Custom `DemoClipboardManager` extends the standard clipboard interface
+- **Process Isolation**: Each demo instance operates independently with unique device identifiers
+- **Network Simulation**: Real WebSocket communication between demo clients
+- **Professional UI Enhancement**: Demo-specific visual indicators and interactive controls
+
 ### **Performance Benchmarks**
 | **Metric** | **Performance** | **Details** |
 |------------|-----------------|-------------|
