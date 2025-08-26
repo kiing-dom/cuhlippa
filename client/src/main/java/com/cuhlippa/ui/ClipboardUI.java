@@ -51,8 +51,10 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     private JLabel statusBar;
     private JPanel detailPanel;
     private JTextField searchField;
-
-    public ClipboardUI(LocalDatabase db, Settings settings) {
+    
+    // Demo mode fields
+    private boolean demoMode = false;
+    private String demoDeviceName = null;    public ClipboardUI(LocalDatabase db, Settings settings) {
         super("Cuhlippa");
         this.db = db;
         this.settings = settings;
@@ -63,6 +65,25 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         configureWindow();
         applyTheme();
         loadItems();
+    }
+    
+    /**
+     * Enable demo mode with enhanced UI indicators
+     */
+    public void setDemoMode(boolean demoMode, String deviceName) {
+        this.demoMode = demoMode;
+        this.demoDeviceName = deviceName;
+        
+        if (demoMode) {
+            // Update window title with demo indicator
+            setTitle("🎬 Cuhlippa DEMO - " + deviceName);
+            
+            // Add demo mode indicator to status bar
+            showStatusMessage("🎬 DEMO MODE: " + deviceName + " - Virtual clipboard active");
+            
+            // Add demo controls to the UI
+            addDemoControls();
+        }
     }
 
     private void initializeComponents() {
@@ -565,10 +586,172 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                 showStatusMessage("Item " + action + " successfully");
                 
                 // Refresh the list to show updated pin status
-                itemList.repaint();
-            } else {
+                itemList.repaint();            } else {
                 showStatusMessage("Failed to toggle pin status");
             }
+        }
+    }
+    
+    /**
+     * Add demo controls for simulating clipboard operations
+     */
+    private void addDemoControls() {
+        // Create demo control panel
+        JPanel demoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        demoPanel.setBorder(BorderFactory.createTitledBorder("🎬 Demo Controls"));
+        
+        // Demo text input
+        JTextField demoTextInput = new JTextField(20);
+        demoTextInput.setToolTipText("Enter text to copy to virtual clipboard");
+        
+        JButton copyTextButton = new JButton("📝 Copy Text");
+        copyTextButton.addActionListener(e -> {
+            String text = demoTextInput.getText().trim();
+            if (!text.isEmpty()) {
+                simulateCopyText(text);
+                demoTextInput.setText("");
+            } else {
+                showStatusMessage("⚠️ Please enter some text to copy");
+            }
+        });
+        
+        JButton copyImageButton = new JButton("🖼️ Copy Sample Image");
+        copyImageButton.addActionListener(e -> simulateCopyImage());
+        
+        JButton pasteButton = new JButton("📋 Paste from Virtual Clipboard");
+        pasteButton.addActionListener(e -> simulatePaste());
+        
+        demoPanel.add(new JLabel("Text:"));
+        demoPanel.add(demoTextInput);
+        demoPanel.add(copyTextButton);
+        demoPanel.add(copyImageButton);
+        demoPanel.add(pasteButton);
+        
+        // Add demo panel to the top of the window
+        Container contentPane = getContentPane();
+        if (contentPane.getLayout() instanceof BorderLayout) {
+            JPanel topPanel = new JPanel(new BorderLayout());
+            Component northComponent = ((BorderLayout) contentPane.getLayout()).getLayoutComponent(BorderLayout.NORTH);
+            if (northComponent != null) {
+                topPanel.add(northComponent, BorderLayout.NORTH);
+            }
+            topPanel.add(demoPanel, BorderLayout.SOUTH);
+            contentPane.add(topPanel, BorderLayout.NORTH);
+        }
+        
+        // Allow Enter key to trigger copy text
+        demoTextInput.addActionListener(e -> copyTextButton.doClick());
+        
+        revalidate();
+        repaint();
+    }
+    
+    /**
+     * Simulate copying text to virtual clipboard in demo mode
+     */
+    private void simulateCopyText(String text) {
+        if (demoMode) {
+            try {
+                // Access the demo clipboard manager from Main class
+                // For now, we'll create a clipboard item directly and add it to the UI
+                String enrichedText = "[" + demoDeviceName + "] " + text;
+                
+                // Create a mock clipboard item
+                byte[] contentBytes = enrichedText.getBytes();
+                String hash = "demo-" + System.currentTimeMillis();
+                ClipboardItem demoItem = new ClipboardItem(
+                    com.cuhlippa.client.clipboard.ItemType.TEXT, 
+                    contentBytes, 
+                    java.time.LocalDateTime.now(), 
+                    hash,
+                    new java.util.HashSet<>(), 
+                    "Demo", 
+                    false
+                );
+                
+                // Add to database and UI
+                db.saveItemAndUpdateHistory(demoItem, settings);
+                SwingUtilities.invokeLater(() -> {
+                    allItems.add(0, demoItem);
+                    listModel.add(0, demoItem);
+                    itemList.setSelectedIndex(0);
+                });
+                
+                showStatusMessage("📝 [" + demoDeviceName + "] Copied: " + text);
+                
+            } catch (Exception ex) {
+                showStatusMessage("❌ Demo copy failed: " + ex.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Simulate copying a sample image in demo mode
+     */
+    private void simulateCopyImage() {
+        if (demoMode) {
+            try {
+                // Create a simple sample image (colored rectangle with device name)
+                java.awt.image.BufferedImage sampleImage = new java.awt.image.BufferedImage(200, 100, java.awt.image.BufferedImage.TYPE_INT_RGB);
+                java.awt.Graphics2D g2d = sampleImage.createGraphics();
+                
+                // Fill with a gradient
+                g2d.setColor(demoDeviceName.contains("Laptop") ? Color.BLUE : Color.GREEN);
+                g2d.fillRect(0, 0, 200, 100);
+                
+                g2d.setColor(Color.WHITE);
+                g2d.setFont(new Font("Arial", Font.BOLD, 16));
+                g2d.drawString(demoDeviceName, 10, 30);
+                g2d.drawString("Sample Image", 10, 50);
+                g2d.drawString(java.time.LocalTime.now().toString().substring(0, 8), 10, 70);
+                g2d.dispose();
+                
+                // Convert to bytes
+                java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+                javax.imageio.ImageIO.write(sampleImage, "png", baos);
+                byte[] imageBytes = baos.toByteArray();
+                
+                String hash = "demo-img-" + System.currentTimeMillis();
+                ClipboardItem demoItem = new ClipboardItem(
+                    com.cuhlippa.client.clipboard.ItemType.IMAGE, 
+                    imageBytes, 
+                    java.time.LocalDateTime.now(), 
+                    hash,
+                    new java.util.HashSet<>(), 
+                    "Demo", 
+                    false
+                );
+                
+                // Add to database and UI
+                db.saveItemAndUpdateHistory(demoItem, settings);
+                SwingUtilities.invokeLater(() -> {
+                    allItems.add(0, demoItem);
+                    listModel.add(0, demoItem);
+                    itemList.setSelectedIndex(0);
+                });
+                
+                showStatusMessage("🖼️ [" + demoDeviceName + "] Copied sample image");
+                
+            } catch (Exception ex) {
+                showStatusMessage("❌ Demo image copy failed: " + ex.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Simulate pasting from virtual clipboard in demo mode
+     */
+    private void simulatePaste() {
+        if (demoMode && !allItems.isEmpty()) {
+            ClipboardItem latestItem = allItems.get(0);
+            if (latestItem.getType() == com.cuhlippa.client.clipboard.ItemType.TEXT) {
+                String content = new String(latestItem.getContent());
+                showStatusMessage("📋 [" + demoDeviceName + "] Pasted: " + content);
+            } else {
+                showStatusMessage("📋 [" + demoDeviceName + "] Pasted " + latestItem.getType().toString().toLowerCase());
+            }
+        } else {
+            showStatusMessage("📋 No items to paste");
         }
     }
 }
