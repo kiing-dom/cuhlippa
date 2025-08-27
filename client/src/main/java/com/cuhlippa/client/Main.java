@@ -9,6 +9,7 @@ import com.cuhlippa.client.config.Settings;
 import com.cuhlippa.client.config.SettingsManager;
 import com.cuhlippa.client.storage.LocalDatabase;
 import com.cuhlippa.client.sync.SyncManager;
+import com.cuhlippa.client.sync.DemoSyncManager;
 import com.cuhlippa.ui.ClipboardUI;
 
 public class Main {
@@ -28,26 +29,22 @@ public class Main {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
         } catch (Exception e) {
             e.printStackTrace();
-        }
-
-        SettingsManager.loadSettings();
+        }        SettingsManager.loadSettings();
         Settings settings = SettingsManager.getSettings();
-        LocalDatabase db = new LocalDatabase();
-          // Create appropriate clipboard manager based on mode
+        LocalDatabase db = new LocalDatabase(demoMode); // Pass demo mode flag to database// Create appropriate clipboard manager based on mode
         if (demoMode) {
             DemoClipboardManager cm = new DemoClipboardManager(db, settings, demoDeviceName);
             System.out.println("🎬 DEMO MODE: Starting as '" + demoDeviceName + "'");
             
-            ClipboardUI ui = new ClipboardUI(db, settings);
-            ui.setDemoMode(true, demoDeviceName);
+            ClipboardUI ui = new ClipboardUI(db, settings);            ui.setDemoMode(true, demoDeviceName);
+            ui.setDemoClipboardManager(cm); // Pass the demo clipboard manager to UI
             
-            SyncManager syncManager = new SyncManager(db, settings);
+            DemoSyncManager demoSyncManager = new DemoSyncManager(db, demoDeviceName);
             
             cm.addClipboardListener(ui);
-            cm.addClipboardListener(syncManager);
-            syncManager.addClipboardListener(ui);
-            
-            syncManager.initialize();
+            cm.addClipboardListener(demoSyncManager);
+            demoSyncManager.addClipboardListener(ui);
+              demoSyncManager.initialize();
             System.out.println("Starting demo clipboard listener...");
             cm.startListening();
             
@@ -57,7 +54,7 @@ public class Main {
             
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 System.out.println("Shutting down...");
-                syncManager.shutdown();
+                demoSyncManager.shutdown();
                 running = false;
             }));
             

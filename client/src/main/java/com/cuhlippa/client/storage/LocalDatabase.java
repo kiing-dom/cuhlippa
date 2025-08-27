@@ -12,8 +12,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 
-public class LocalDatabase {
-    private static final String DB_URL = "jdbc:sqlite:cuhlippa_" + getProcessId() + ".db";
+public class LocalDatabase {    private final String DB_URL;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private static final int CURRENT_DB_VERSION = 3;
     private static final String COLUMN_CATEGORY = "category";
@@ -26,11 +25,52 @@ public class LocalDatabase {
     private static String getProcessId() {
         return String.valueOf(ProcessHandle.current().pid());
     }
-
+    
+    /**
+     * Constructor with database name based on demo mode
+     */
     public LocalDatabase() {
+        this(false); // Default to production mode
+    }
+    
+    /**
+     * Constructor that allows demo mode specification
+     */
+    public LocalDatabase(boolean isDemoMode) {
+        if (isDemoMode) {
+            // In demo mode, use process ID to avoid conflicts between demo instances
+            this.DB_URL = "jdbc:sqlite:cuhlippa_" + getProcessId() + ".db";
+            System.out.println("🎬 Demo database: " + this.DB_URL);
+        } else {
+            // Production mode uses consistent database name
+            this.DB_URL = "jdbc:sqlite:cuhlippa.db";
+        }
+        
+        optimizeDatabaseConfiguration();
         createTableIfNotExists();
         checkAndMigrateDatabase();
         createTagsTable();
+    }
+
+    private void optimizeDatabaseConfiguration() {
+        try (Connection conn = DriverManager.getConnection(DB_URL);
+             Statement stmt = conn.createStatement()) {
+            
+            // Enable WAL mode for better concurrent access
+            stmt.execute("PRAGMA journal_mode=WAL");
+            
+            // Set busy timeout to handle lock contention
+            stmt.execute("PRAGMA busy_timeout=5000");
+            
+            // Optimize performance
+            stmt.execute("PRAGMA synchronous=NORMAL");
+            stmt.execute("PRAGMA cache_size=10000");
+            stmt.execute("PRAGMA temp_store=memory");
+            
+            System.out.println("Database optimizations applied for concurrent access");
+        } catch (SQLException e) {
+            System.err.println("Failed to optimize database: " + e.getMessage());
+        }
     }
 
     private void createTableIfNotExists() {
@@ -105,14 +145,35 @@ public class LocalDatabase {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-    }
-
-    private void saveTags(String itemHash, Set<String> tags) {
-        try (Connection conn = DriverManager.getConnection(DB_URL)) {
-            deleteOldTags(conn, itemHash);
-            insertNewTags(conn, itemHash, tags);
-        } catch (SQLException e) {
-            System.out.println("Failed to save tags: " + e.getMessage());
+    }    private void saveTags(String itemHash, Set<String> tags) {
+        int maxRetries = 3;
+        int retryDelay = 100; // milliseconds
+        
+        for (int attempt = 0; attempt < maxRetries; attempt++) {
+            try (Connection conn = DriverManager.getConnection(DB_URL)) {
+                conn.setAutoCommit(false);
+                try {
+                    deleteOldTags(conn, itemHash);
+                    insertNewTags(conn, itemHash, tags);
+                    conn.commit();
+                    return; // Success, exit retry loop
+                } catch (SQLException e) {
+                    conn.rollback();
+                    throw e;
+                }
+            } catch (SQLException e) {
+                if (attempt == maxRetries - 1) {
+                    System.err.println("Failed to save tags after " + maxRetries + " attempts: " + e.getMessage());
+                } else {
+                    System.out.println("Tag save attempt " + (attempt + 1) + " failed, retrying: " + e.getMessage());
+                    try {
+                        Thread.sleep(retryDelay * (attempt + 1)); // Exponential backoff
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                }
+            }
         }
     }
 
