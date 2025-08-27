@@ -32,14 +32,14 @@ if (-not (Test-Path "client\target\classes\com\cuhlippa\client\Main.class")) {
 # Start first demo client (Device A)
 Write-Host ""
 Write-Host "Starting Demo Device A (Blue)..."
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PWD'; java -cp 'client/target/classes;client/target/dependency/*' com.cuhlippa.client.Main --demo-mode --device-name=Device-A" -WindowStyle Normal
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PWD/client'; mvn exec:java '-Dexec.mainClass=com.cuhlippa.client.Main' '-Dexec.args=--demo-mode --device-name=Device-A'" -WindowStyle Normal
 
 # Wait a moment for first client to initialize
 Start-Sleep -Seconds 2
 
 # Start second demo client (Device B)
 Write-Host "Starting Demo Device B (Green)..."
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PWD'; java -cp 'client/target/classes;client/target/dependency/*' com.cuhlippa.client.Main --demo-mode --device-name=Device-B" -WindowStyle Normal
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PWD/client'; mvn exec:java '-Dexec.mainClass=com.cuhlippa.client.Main' '-Dexec.args=--demo-mode --device-name=Device-B'" -WindowStyle Normal
 
 Write-Host ""
 Write-Host "✅ Demo clients launched successfully!" -ForegroundColor Green

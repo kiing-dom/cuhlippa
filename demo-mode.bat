@@ -32,14 +32,14 @@ if not exist "client\target\classes\com\cuhlippa\client\Main.class" (
 REM Start first demo client (Device A)
 echo.
 echo Starting Demo Device A (Blue)...
-start "Cuhlippa Demo - Device A" cmd /k "cd /d %~dp0 && java -cp client/target/classes;client/target/dependency/* com.cuhlippa.client.Main --demo-mode --device-name=Device-A"
+start "Cuhlippa Demo - Device A" cmd /k "cd /d %~dp0\client && mvn exec:java -Dexec.mainClass=com.cuhlippa.client.Main -Dexec.args=\"--demo-mode --device-name=Device-A\""
 
 REM Wait a moment for first client to initialize
 timeout /t 2 /nobreak >nul
 
 REM Start second demo client (Device B)
 echo Starting Demo Device B (Green)...
-start "Cuhlippa Demo - Device B" cmd /k "cd /d %~dp0 && java -cp client/target/classes;client/target/dependency/* com.cuhlippa.client.Main --demo-mode --device-name=Device-B"
+start "Cuhlippa Demo - Device B" cmd /k "cd /d %~dp0\client && mvn exec:java -Dexec.mainClass=com.cuhlippa.client.Main -Dexec.args=\"--demo-mode --device-name=Device-B\""
 
 echo.
 echo ✅ Demo clients launched successfully!

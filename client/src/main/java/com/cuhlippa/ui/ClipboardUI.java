@@ -51,10 +51,12 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     private JLabel statusBar;
     private JPanel detailPanel;
     private JTextField searchField;
-    
-    // Demo mode fields
+      // Demo mode fields
     private boolean demoMode = false;
-    private String demoDeviceName = null;    public ClipboardUI(LocalDatabase db, Settings settings) {
+    private String demoDeviceName = null;
+    private com.cuhlippa.client.clipboard.DemoClipboardManager demoClipboardManager = null;
+
+    public ClipboardUI(LocalDatabase db, Settings settings) {
         super("Cuhlippa");
         this.db = db;
         this.settings = settings;
@@ -66,8 +68,7 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         applyTheme();
         loadItems();
     }
-    
-    /**
+      /**
      * Enable demo mode with enhanced UI indicators
      */
     public void setDemoMode(boolean demoMode, String deviceName) {
@@ -84,6 +85,13 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
             // Add demo controls to the UI
             addDemoControls();
         }
+    }
+    
+    /**
+     * Set the demo clipboard manager for demo mode
+     */
+    public void setDemoClipboardManager(com.cuhlippa.client.clipboard.DemoClipboardManager demoClipboardManager) {
+        this.demoClipboardManager = demoClipboardManager;
     }
 
     private void initializeComponents() {
@@ -645,58 +653,36 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         revalidate();
         repaint();
     }
-    
-    /**
+      /**
      * Simulate copying text to virtual clipboard in demo mode
      */
     private void simulateCopyText(String text) {
-        if (demoMode) {
+        if (demoMode && demoClipboardManager != null) {
             try {
-                // Access the demo clipboard manager from Main class
-                // For now, we'll create a clipboard item directly and add it to the UI
+                // Use the demo clipboard manager to properly process the text
                 String enrichedText = "[" + demoDeviceName + "] " + text;
-                
-                // Create a mock clipboard item
-                byte[] contentBytes = enrichedText.getBytes();
-                String hash = "demo-" + System.currentTimeMillis();
-                ClipboardItem demoItem = new ClipboardItem(
-                    com.cuhlippa.client.clipboard.ItemType.TEXT, 
-                    contentBytes, 
-                    java.time.LocalDateTime.now(), 
-                    hash,
-                    new java.util.HashSet<>(), 
-                    "Demo", 
-                    false
-                );
-                
-                // Add to database and UI
-                db.saveItemAndUpdateHistory(demoItem, settings);
-                SwingUtilities.invokeLater(() -> {
-                    allItems.add(0, demoItem);
-                    listModel.add(0, demoItem);
-                    itemList.setSelectedIndex(0);
-                });
-                
+                demoClipboardManager.copyTextToVirtualClipboard(enrichedText);
                 showStatusMessage("📝 [" + demoDeviceName + "] Copied: " + text);
                 
             } catch (Exception ex) {
                 showStatusMessage("❌ Demo copy failed: " + ex.getMessage());
             }
+        } else if (demoMode) {
+            showStatusMessage("❌ Demo clipboard manager not available");
         }
     }
-    
-    /**
+      /**
      * Simulate copying a sample image in demo mode
      */
     private void simulateCopyImage() {
-        if (demoMode) {
+        if (demoMode && demoClipboardManager != null) {
             try {
                 // Create a simple sample image (colored rectangle with device name)
                 java.awt.image.BufferedImage sampleImage = new java.awt.image.BufferedImage(200, 100, java.awt.image.BufferedImage.TYPE_INT_RGB);
                 java.awt.Graphics2D g2d = sampleImage.createGraphics();
                 
                 // Fill with a gradient
-                g2d.setColor(demoDeviceName.contains("Laptop") ? Color.BLUE : Color.GREEN);
+                g2d.setColor(demoDeviceName.contains("Device-A") ? Color.BLUE : Color.GREEN);
                 g2d.fillRect(0, 0, 200, 100);
                 
                 g2d.setColor(Color.WHITE);
@@ -706,35 +692,15 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                 g2d.drawString(java.time.LocalTime.now().toString().substring(0, 8), 10, 70);
                 g2d.dispose();
                 
-                // Convert to bytes
-                java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-                javax.imageio.ImageIO.write(sampleImage, "png", baos);
-                byte[] imageBytes = baos.toByteArray();
-                
-                String hash = "demo-img-" + System.currentTimeMillis();
-                ClipboardItem demoItem = new ClipboardItem(
-                    com.cuhlippa.client.clipboard.ItemType.IMAGE, 
-                    imageBytes, 
-                    java.time.LocalDateTime.now(), 
-                    hash,
-                    new java.util.HashSet<>(), 
-                    "Demo", 
-                    false
-                );
-                
-                // Add to database and UI
-                db.saveItemAndUpdateHistory(demoItem, settings);
-                SwingUtilities.invokeLater(() -> {
-                    allItems.add(0, demoItem);
-                    listModel.add(0, demoItem);
-                    itemList.setSelectedIndex(0);
-                });
-                
+                // Use the demo clipboard manager to properly process the image
+                demoClipboardManager.copyImageToVirtualClipboard(sampleImage);
                 showStatusMessage("🖼️ [" + demoDeviceName + "] Copied sample image");
                 
             } catch (Exception ex) {
                 showStatusMessage("❌ Demo image copy failed: " + ex.getMessage());
             }
+        } else if (demoMode) {
+            showStatusMessage("❌ Demo clipboard manager not available");
         }
     }
     
