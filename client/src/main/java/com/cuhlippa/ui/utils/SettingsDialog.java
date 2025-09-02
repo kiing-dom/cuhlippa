@@ -6,6 +6,8 @@ import java.util.Arrays;
 
 import com.cuhlippa.client.config.Settings;
 import com.cuhlippa.client.config.SettingsManager;
+import com.cuhlippa.client.discovery.DiscoveredServer;
+import com.cuhlippa.ui.discovery.DeviceDiscoveryDialog;
 
 public class SettingsDialog extends JDialog {
     private final transient Settings settings;
@@ -13,12 +15,12 @@ public class SettingsDialog extends JDialog {
     private JTextField thumbnailSizeField;
     private JComboBox<String> themeCombo;
     private JTextArea ignorePatternsArea;
-    
-    // Sync settings components
+      // Sync settings components
     private JCheckBox enableSyncCheckBox;
     private JTextField syncServerField;
     private JTextField encryptionKeyField;
     private JButton autoDetectButton;
+    private JButton discoverDevicesButton;
 
     public SettingsDialog(JFrame parent, Settings settings) {
         super(parent, "Settings", true);
@@ -35,14 +37,29 @@ public class SettingsDialog extends JDialog {
         ignorePatternsArea = new JTextArea(5, 30);
         ignorePatternsArea.setLineWrap(true);
         ignorePatternsArea.setWrapStyleWord(true);
-        
-        // Sync components
+          // Sync components
         enableSyncCheckBox = new JCheckBox("Enable Sync");
         syncServerField = new JTextField(25);
         encryptionKeyField = new JTextField(25);
         autoDetectButton = new JButton("Auto-Detect");
+        discoverDevicesButton = new JButton("🔍 Discover Devices");
+          // Discover devices button action
+        discoverDevicesButton.addActionListener(e -> {
+            DeviceDiscoveryDialog dialog = new DeviceDiscoveryDialog((Frame) getOwner());
+            if (dialog.showDialog()) {
+                DiscoveredServer selectedServer = dialog.getSelectedServer();
+                if (selectedServer != null) {
+                    String serverUrl = selectedServer.getWebSocketUrl();
+                    syncServerField.setText(serverUrl);
+                    JOptionPane.showMessageDialog(this, 
+                        "Connected to: " + selectedServer.getServerName() + 
+                        "\nServer: " + serverUrl,
+                        "Server Selected", JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+        });
         
-        // Auto-detect button action
+        // Auto-detect button action (keep as fallback)
         autoDetectButton.addActionListener(e -> {
             try {
                 // Use reflection to call NetworkUtils.buildDefaultSyncUrl()
@@ -64,6 +81,7 @@ public class SettingsDialog extends JDialog {
             syncServerField.setEnabled(enabled);
             encryptionKeyField.setEnabled(enabled);
             autoDetectButton.setEnabled(enabled);
+            discoverDevicesButton.setEnabled(enabled);
         });
     }    private void loadCurrentSettings() {
         maxHistoryField.setText(String.valueOf(settings.getMaxHistoryItems()));
@@ -133,14 +151,18 @@ public class SettingsDialog extends JDialog {
         syncGbc.gridx = 1;
         syncGbc.fill = GridBagConstraints.HORIZONTAL;
         syncGbc.weightx = 1.0;
-        syncPanel.add(syncServerField, syncGbc);
-
-        syncGbc.gridx = 0; syncGbc.gridy = 2;
+        syncPanel.add(syncServerField, syncGbc);        syncGbc.gridx = 0; syncGbc.gridy = 2;
         syncGbc.fill = GridBagConstraints.NONE;
         syncGbc.weightx = 0;
         syncPanel.add(new JLabel(""), syncGbc); // Spacer
+        
+        // Discovery button panel for discovery and auto-detect
+        JPanel discoveryButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        discoveryButtonPanel.add(discoverDevicesButton);
+        discoveryButtonPanel.add(autoDetectButton);
+        
         syncGbc.gridx = 1;
-        syncPanel.add(autoDetectButton, syncGbc);
+        syncPanel.add(discoveryButtonPanel, syncGbc);
 
         syncGbc.gridx = 0; syncGbc.gridy = 3;
         syncGbc.insets = new Insets(15, 10, 5, 10);
