@@ -5,7 +5,7 @@ public class DiscoveryConstants {
     public static final int DISCOVERY_PORT = 8081;
     public static final int BUFFER_SIZE = 1024;
 
-    public static final int SERVER_ADVERTISEMENT_INTERNAL_MS = 5000;
+    public static final int SERVER_ADVERTISEMENT_INTERVAL_MS = 5000;
     public static final int CLIENT_DISCOVERY_TIMEOUT_MS = 10000;
     public static final int SERVER_TIMEOUT_MS = 15000;
     public static final int SOCKET_TIMEOUT_MS = 3000;
