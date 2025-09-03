@@ -1,54 +1,86 @@
-# 📋 Cuhlippa - Enterprise Clipboard Synchronization Platform
+# 📋 Cuhlippa - Clipboard Synchronization
 
-[![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://openjdk.java.net/projects/jdk/17/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.0-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![Maven](https://img.shields.io/badge/Maven-3.6+-blue.svg)](https://maven.apache.org/)
-[![WebSocket](https://img.shields.io/badge/WebSocket-Real--time-yellow.svg)](https://tools.ietf.org/html/rfc6455)
-[![Architecture](https://img.shields.io/badge/Architecture-Multi--Module-blue.svg)](https://maven.apache.org/guides/mini/guide-multiple-modules.html)
+[![Java](https://img.shields.io/badge/Java-17+-orange.svg)](https://openjdk.java.net/projects/jdk/17/)
+[![Release](https://img.shields.io/github/v/release/kiing-dom/cuhlippa.svg)](https://github.com/kiing-dom/cuhlippa/releases)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen.svg)](#)
 
-> **A production-ready, enterprise-grade clipboard synchronization system featuring real-time multi-device sync, advanced networking, and modern Java architecture.**
+> **Real-time clipboard synchronization across multiple devices with automatic network discovery**
 
-Cuhlippa is a distributed clipboard management platform that enables real-time synchronization of clipboard content across multiple devices on a local network. Built with **Spring Boot WebSocket** technology and a **multi-module Maven architecture**.
+Cuhlippa enables instant clipboard sharing between Windows, macOS, and Linux devices on your local network. Copy on one device, paste on another - it's that simple.
 
-## 🏗️ Architecture & Design
+## 🚀 Quick Start
 
-### **Microservices-Inspired Multi-Module Architecture**
+### Prerequisites
+- Java 17+ installed on all devices
+- Devices connected to the same local network
+
+### Option 1: Automatic Setup (Recommended)
+
+1. **Download**: Get the latest [release](https://github.com/kiing-dom/cuhlippa/releases)
+2. **Start Server** (on one device):
+   ```bash
+   # Windows: start-server.bat
+   # Linux/macOS: ./start-server.sh
+   ```
+3. **Start Clients** (on all devices):
+   ```bash
+   # Windows: start-client.bat  
+   # Linux/macOS: ./start-client.sh
+   ```
+4. **Connect**: Open Settings → Sync → "🔍 Discover Devices" → Select your server
+
+### Option 2: Manual Connection
+If automatic discovery doesn't work (corporate networks):
+1. Start server and note the IP address shown
+2. In client: Settings → Sync → Enter server address: `ws://SERVER_IP:8080/sync`
+
+## ✨ Features
+
+- **🔍 Zero-Config Discovery**: Automatically finds servers on your network
+- **📱 Cross-Platform**: Windows, macOS, Linux support
+- **🖼️ Rich Content**: Text, images (up to 10MB), file paths
+- **🎨 Modern UI**: Professional interface with dark/light themes
+- **🔒 Optional Encryption**: AES encryption for sensitive data
+- **🏷️ Organization**: Tags, categories, search, history
+- **📤 Export/Import**: Backup and restore clipboard data
+
+## 🚨 Troubleshooting
+
+**Discovery not working?**
+- Check firewall allows ports 8080 and 8081
+- Try manual IP connection instead
+- Some corporate networks block multicast
+
+**Sync issues?**
+- Verify server is running and accessible
+- Check all devices are on same network
+- Restart server and clients
+
+## 📋 System Requirements
+
+- **Java**: 17 or higher
+- **OS**: Windows 10+, macOS 10.14+, Linux (Ubuntu 18.04+)
+- **Network**: Local network connectivity
+- **Firewall**: Ports 8080 (WebSocket) and 8081 (Discovery)
+
+## 🔧 Development
+
+### Build from Source
+```bash
+git clone https://github.com/kiing-dom/cuhlippa.git
+cd cuhlippa
+mvn clean package
 ```
-cuhlippa/                                    # Root project with parent POM
-├── 📦 shared/                              # Common utilities and networking
-│   ├── NetworkUtils.java                   # Custom IP discovery & connectivity
-│   └── ConfigurationManager.java           # Centralized configuration
-├── 🖥️ client/                              # Desktop application module
-│   ├── ClipboardManager.java              # System clipboard integration
-│   ├── SyncManager.java                   # WebSocket client coordination
-│   ├── ClipboardUI.java                   # Professional Swing interface
-│   └── LocalDatabase.java                 # SQLite persistence layer
-├── 🌐 server/                              # Spring Boot WebSocket server
-│   ├── ClipboardSyncHandler.java          # WebSocket message routing
-│   ├── SecurityConfig.java                # Authentication & authorization
-│   └── WebSocketConfig.java               # Real-time communication setup
-└── 📄 pom.xml                             # Parent POM with dependency management
-```
 
-### **Technology Stack & Framework Integration**
-- **Backend**: Spring Boot 3.2, WebSocket API, Jackson JSON processing
-- **Desktop**: Java Swing with custom UI components and theming
-- **Database**: SQLite with optimized indexing and query performance
-- **Build System**: Maven multi-module with centralized dependency management
-- **Network**: Custom socket programming with auto-discovery protocols
-- **Architecture**: Event-driven design with observer patterns and async communication
+### Architecture
+- **Multi-module Maven** project with shared, server, and client modules
+- **Spring Boot WebSocket** server for real-time communication
+- **Swing UI** with modern theming and responsive design
+- **SQLite** for local data persistence and history
 
-## ✨ Production Features
+---
 
-### 🚀 **Real-Time Multi-Device Synchronization**
-- **Instant WebSocket communication** with sub-100ms latency across local networks
-- **Bi-directional sync** supporting unlimited concurrent devices
-- **Auto-reconnection** with exponential backoff and connection health monitoring
-- **Device identification** system with unique process-based IDs preventing conflicts
-
-### 🛡️ **Enterprise Security & Reliability**
-- **Optional AES encryption** for sensitive clipboard data
+**Built with Java 17, Spring Boot, and modern enterprise architecture**
 - **Device authentication** with unique identifier verification
 - **Data integrity** validation using SHA-256 hashing algorithms
 - **Network isolation** ensuring local-only communication by default
