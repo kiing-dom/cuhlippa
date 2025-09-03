@@ -1,0 +1,31 @@
+# Error Message Templates for User-Friendly Display
+
+## Connection Errors
+CONNECTION_FAILED=Unable to connect to sync server. Please check:\n• Server is running\n• Network connectivity\n• Firewall settings\n• Server address is correct
+WEBSOCKET_DISCONNECTED=Lost connection to sync server. Attempting to reconnect...
+DISCOVERY_FAILED=Network discovery found no servers.\n\nTry:\n• Manual IP entry\n• Check firewall settings\n• Ensure server is running\n• Verify same network
+
+## Configuration Errors
+INVALID_SERVER_URL=Invalid server address format.\n\nExpected: ws://SERVER_IP:8080/sync\nExample: ws://192.168.1.100:8080/sync
+ENCRYPTION_KEY_MISMATCH=Encryption key mismatch. Ensure all devices use the same encryption key.
+MISSING_JAVA=Java 17+ is required but not found.\n\nPlease install Java 17 or higher and try again.
+
+## File and Content Errors
+IMAGE_TOO_LARGE=Image too large for sync ({0} MB). Maximum size is {1} MB.\n\nTip: Large images are skipped to maintain performance.
+CLIPBOARD_ACCESS_DENIED=Cannot access system clipboard.\n\nOn macOS: Grant accessibility permissions\nOn Linux: Ensure X11 clipboard support
+FILE_NOT_FOUND=File not found: {0}\n\nThe file may have been moved or deleted.
+
+## Network Errors
+FIREWALL_BLOCKED=Connection blocked by firewall.\n\nPlease allow:\n• Port 8080 (WebSocket)\n• Port 8081 (Discovery)\n• Java application through firewall
+NETWORK_TIMEOUT=Network timeout occurred.\n\nCheck:\n• Network connectivity\n• Server is responsive\n• No network interference
+MULTICAST_NOT_SUPPORTED=Network doesn't support multicast discovery.\n\nUse manual server IP entry instead.
+
+## Success Messages
+SYNC_ENABLED=✅ Sync enabled successfully!\nClipboard will now sync across connected devices.
+SERVER_DISCOVERED=✅ Found {0} server(s) on network.\nSelect one to connect.
+DISCOVERY_CONNECTED=✅ Connected to {0}\nServer: {1}
+
+## Warning Messages
+LARGE_HISTORY=⚠️ Large clipboard history detected.\nPerformance may be affected. Consider reducing history size.
+NO_ENCRYPTION=⚠️ Sync encryption is disabled.\nClipboard data will be sent unencrypted.
+DEMO_MODE_ACTIVE=🎬 Demo mode active\nUsing virtual clipboard for demonstration.

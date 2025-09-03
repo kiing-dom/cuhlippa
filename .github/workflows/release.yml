@@ -1,0 +1,342 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Cache Maven dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+        
+    - name: Extract version from tag
+      id: extract_version
+      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+    - name: Run tests
+      run: mvn clean test -B
+      
+    - name: Build applications
+      run: mvn package -DskipTests -B
+      
+    - name: Create release directory
+      run: |
+        mkdir -p release/cuhlippa-${{ steps.extract_version.outputs.VERSION }}
+        cd release/cuhlippa-${{ steps.extract_version.outputs.VERSION }}
+        
+        # Copy JARs with simplified names
+        cp ../../server/target/cuhlippa-server-*.jar ./cuhlippa-server.jar
+        cp ../../client/target/cuhlippa-client-*.jar ./cuhlippa-client.jar
+        
+        # Create launcher scripts
+        cat > start-server.sh << 'EOF'
+        #!/bin/bash
+        echo "🌐 Starting Cuhlippa Server v${{ steps.extract_version.outputs.VERSION }}..."
+        echo "🔗 WebSocket Server will be available at ws://YOUR_IP:8080/sync"
+        echo "🔍 UDP Discovery broadcasting on 224.0.0.251:8081"
+        echo ""
+        java -Xms256m -Xmx1g -jar cuhlippa-server.jar
+        EOF
+        
+        cat > start-client.sh << 'EOF'
+        #!/bin/bash
+        echo "📋 Starting Cuhlippa Client v${{ steps.extract_version.outputs.VERSION }}..."
+        echo "🔧 Use Settings → Sync → Discover Devices to find servers automatically"
+        echo ""
+        java -Xms128m -Xmx512m -jar cuhlippa-client.jar
+        EOF
+        
+        cat > start-server.bat << 'EOF'
+        @echo off
+        title Cuhlippa Server v${{ steps.extract_version.outputs.VERSION }}
+        echo 🌐 Starting Cuhlippa Server v${{ steps.extract_version.outputs.VERSION }}...
+        echo 🔗 WebSocket Server will be available at ws://YOUR_IP:8080/sync
+        echo 🔍 UDP Discovery broadcasting on 224.0.0.251:8081
+        echo.
+        java -Xms256m -Xmx1g -jar cuhlippa-server.jar
+        pause
+        EOF
+        
+        cat > start-client.bat << 'EOF'
+        @echo off
+        title Cuhlippa Client v${{ steps.extract_version.outputs.VERSION }}
+        echo 📋 Starting Cuhlippa Client v${{ steps.extract_version.outputs.VERSION }}...
+        echo 🔧 Use Settings → Sync → Discover Devices to find servers automatically
+        echo.
+        java -Xms128m -Xmx512m -jar cuhlippa-client.jar
+        pause
+        EOF
+        
+        cat > demo-mode.bat << 'EOF'
+        @echo off
+        title Cuhlippa Demo Mode v${{ steps.extract_version.outputs.VERSION }}
+        echo ========================================
+        echo    🎬 Cuhlippa Demo Mode v${{ steps.extract_version.outputs.VERSION }}
+        echo ========================================
+        echo.
+        echo Starting two demo clients to demonstrate clipboard sync...
+        echo.
+        start "Cuhlippa Demo Device A" java -jar cuhlippa-client.jar --demo-mode --device-name="Device-A"
+        timeout /t 2 >nul
+        start "Cuhlippa Demo Device B" java -jar cuhlippa-client.jar --demo-mode --device-name="Device-B"
+        echo Demo clients started! You can now test clipboard sync between the two windows.
+        pause
+        EOF
+        
+        # Make shell scripts executable
+        chmod +x start-server.sh start-client.sh
+        
+    - name: Create configuration templates
+      run: |
+        cd release/cuhlippa-${{ steps.extract_version.outputs.VERSION }}
+        mkdir -p config
+        
+        # Client settings template
+        cat > config/client-settings-template.json << 'EOF'
+        {
+          "theme": "light",
+          "maxHistoryItems": 200,
+          "thumbnailSize": 64,
+          "ignorePatterns": [],
+          "sync": {
+            "enabled": false,
+            "serverAddress": "ws://localhost:8080/sync",
+            "encryptionKey": ""
+          }
+        }
+        EOF
+        
+        # Server configuration template
+        cat > config/server-config-template.properties << 'EOF'
+        # Cuhlippa Server Configuration Template
+        # Copy this to server/src/main/resources/application.properties and modify as needed
+        
+        # Server Configuration
+        server.port=8080
+        server.address=0.0.0.0
+        spring.application.name=cuhlippa-sync-server
+        
+        # Logging
+        logging.level.com.cuhlippa=INFO
+        
+        # WebSocket Configuration (for large image support)
+        spring.websocket.message.size-limit=20971520
+        spring.websocket.buffer.size-limit=20971520
+        server.tomcat.max-http-post-size=20971520
+        
+        # Discovery Service Configuration
+        cuhlippa.discovery.multicast-group=224.0.0.251
+        cuhlippa.discovery.port=8081
+        cuhlippa.discovery.interval-ms=5000
+        EOF
+        
+    - name: Create documentation
+      run: |
+        cd release/cuhlippa-${{ steps.extract_version.outputs.VERSION }}
+        
+        # Copy main README
+        cp ../../README.md ./README-FULL.md
+        
+        # Create simplified README for release
+        cat > README.md << 'EOF'
+        # 📋 Cuhlippa - Clipboard Synchronization
+        
+        **Version ${{ steps.extract_version.outputs.VERSION }}** | **Enterprise-grade clipboard synchronization with automatic device discovery**
+        
+        ## 🚀 Quick Start
+        
+        ### Prerequisites
+        - Java 17 or higher installed on all devices
+        - Devices connected to the same local network
+        - Firewall configured to allow ports 8080 and 8081
+        
+        ### Automatic Setup (Recommended)
+        
+        1. **Start the Server** (on one device):
+           ```bash
+           # Windows
+           start-server.bat
+           
+           # Linux/macOS  
+           ./start-server.sh
+           ```
+        
+        2. **Start Clients** (on all devices):
+           ```bash
+           # Windows
+           start-client.bat
+           
+           # Linux/macOS
+           ./start-client.sh
+           ```
+        
+        3. **Connect Automatically**:
+           - Open client Settings → Sync
+           - Click "🔍 Discover Devices"
+           - Select your server and click Connect
+        
+        ### Demo Mode
+        ```bash
+        # Windows only - launches two demo clients
+        demo-mode.bat
+        ```
+        
+        ## ✨ Features
+        
+        - **🔍 Zero-Config Discovery**: Automatic server detection on local networks
+        - **📱 Cross-Device Sync**: Text, images, and file paths sync instantly
+        - **🖼️ Large Image Support**: Screenshots and images up to 10MB
+        - **🔒 Optional Encryption**: AES encryption for sensitive data
+        - **🎨 Modern UI**: Dark/light themes with professional design
+        - **📋 Rich Clipboard**: Supports text, images, file paths
+        - **🏷️ Organization**: Tags, categories, search, and pinning
+        - **📤 Export/Import**: Backup and restore clipboard history
+        
+        ## 🔧 Configuration
+        
+        ### Client Configuration
+        Copy `config/client-settings-template.json` to customize:
+        - Theme preferences (light/dark)
+        - History settings
+        - Sync server configuration
+        
+        ### Server Configuration  
+        Copy `config/server-config-template.properties` for advanced setup:
+        - Port configuration
+        - Discovery settings
+        - Performance tuning
+        
+        ## 🚨 Troubleshooting
+        
+        ### Discovery Not Working
+        1. Check firewall - ensure ports 8080 and 8081 are open
+        2. Some WiFi networks block multicast - try manual IP entry
+        3. Restart server and clients
+        
+        ### Sync Issues
+        1. Verify server is running and accessible
+        2. Check network connectivity
+        3. Try manual connection with server IP
+        
+        ## 📋 System Requirements
+        
+        - **OS**: Windows 10+, macOS 10.14+, Linux (Ubuntu 18.04+)
+        - **Java**: OpenJDK 17 or Oracle JDK 17+
+        - **RAM**: 512MB minimum, 1GB recommended
+        - **Network**: Local network connectivity
+        
+        ## 📖 Documentation
+        
+        See `README-FULL.md` for complete technical documentation.
+        EOF
+        
+        # Create system requirements
+        cat > SYSTEM_REQUIREMENTS.md << 'EOF'
+        # System Requirements
+        
+        ## Java Requirements
+        - **Minimum**: OpenJDK 17 or Oracle JDK 17+
+        - **Recommended**: OpenJDK 21 LTS
+        - **Check**: Run `java -version` to verify
+        
+        ## Operating Systems
+        
+        ### Windows
+        - **Minimum**: Windows 10 (64-bit)
+        - **Recommended**: Windows 11
+        - **Notes**: Windows Defender may require firewall permission
+        
+        ### macOS
+        - **Minimum**: macOS 10.14 (Mojave)
+        - **Recommended**: macOS 12+ (Monterey)
+        - **Notes**: May require accessibility permissions for clipboard access
+        
+        ### Linux
+        - **Minimum**: Ubuntu 18.04+, CentOS 7+, RHEL 7+
+        - **Recommended**: Ubuntu 22.04 LTS
+        - **Notes**: Some distros may need X11 clipboard support
+        
+        ## Network Requirements
+        - **Local Network**: All devices must be on same LAN/WiFi
+        - **Firewall Ports**: 
+          - TCP 8080 (WebSocket server)
+          - UDP 8081 (Discovery multicast)
+        - **Bandwidth**: 100Mbps+ recommended for large images
+        
+        ## Memory Requirements
+        - **Client**: 256MB minimum, 512MB recommended
+        - **Server**: 512MB minimum, 1GB recommended
+        - **Large Images**: Additional memory for images over 5MB
+        EOF
+        
+    - name: Create release package
+      run: |
+        cd release
+        
+        # Create ZIP file
+        zip -r cuhlippa-${{ steps.extract_version.outputs.VERSION }}.zip cuhlippa-${{ steps.extract_version.outputs.VERSION }}/
+        
+        # Create checksums
+        sha256sum cuhlippa-${{ steps.extract_version.outputs.VERSION }}.zip > cuhlippa-${{ steps.extract_version.outputs.VERSION }}.zip.sha256
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.ref }}
+        name: Cuhlippa v${{ steps.extract_version.outputs.VERSION }}
+        draft: false
+        prerelease: false
+        body: |
+          # Cuhlippa v${{ steps.extract_version.outputs.VERSION }} - Production Release 🚀
+          
+          ## 🌟 Features
+          - **🔍 Zero-configuration device discovery** - Automatically finds servers on your network
+          - **📱 Cross-platform clipboard sync** - Windows, macOS, and Linux support
+          - **🖼️ Large image support** - Sync screenshots and images up to 10MB
+          - **🔒 Optional encryption** - AES encryption for sensitive data
+          - **🎨 Modern UI** - Professional interface with dark/light themes
+          - **📋 Rich clipboard support** - Text, images, file paths, and more
+          - **🏷️ Organization tools** - Tags, categories, search, and pinning
+          
+          ## 🚀 Quick Start
+          1. Download `cuhlippa-${{ steps.extract_version.outputs.VERSION }}.zip`
+          2. Extract and run `start-server.bat` (on one device)
+          3. Run `start-client.bat` (on all devices)
+          4. Use Settings → Sync → Discover Devices to connect automatically
+          
+          ## 📋 What's Included
+          - Server and client applications (Java 17+)
+          - Cross-platform launcher scripts
+          - Configuration templates
+          - Complete documentation
+          
+          ## 🚨 Requirements
+          - Java 17+ on all devices
+          - Local network connectivity
+          - Firewall permissions for ports 8080/8081
+          
+          ## 📖 Documentation
+          See README.md in the package for complete setup instructions.
+        files: |
+          release/cuhlippa-${{ steps.extract_version.outputs.VERSION }}.zip
+          release/cuhlippa-${{ steps.extract_version.outputs.VERSION }}.zip.sha256
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -2,6 +2,7 @@ package com.cuhlippa.client;
 
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.JOptionPane;
 
 import com.cuhlippa.client.clipboard.ClipboardManager;
 import com.cuhlippa.client.clipboard.DemoClipboardManager;
@@ -16,27 +17,36 @@ public class Main {
     private static volatile boolean running = true;
     private static boolean demoMode = false;
     private static String demoDeviceName = null;
+    
+    // Version information
+    private static final String VERSION = "1.0.0";
+    private static final String APP_NAME = "Cuhlippa";
 
     private Main() {
         // Private constructor to prevent instantiation
-    }
-
-    public static void main(String[] args) {
+    }    public static void main(String[] args) {
+        // Display version information
+        System.out.println("🚀 " + APP_NAME + " v" + VERSION + " - Enterprise Clipboard Synchronization");
+        System.out.println("📋 Real-time clipboard sync with automatic device discovery");
+        System.out.println();
+        
         // Parse command line arguments
         parseArguments(args);
         
         try {
             UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
         } catch (Exception e) {
-            e.printStackTrace();
-        }        SettingsManager.loadSettings();
+            System.err.println("Failed to set look and feel: " + e.getMessage());
+        }
+        SettingsManager.loadSettings();
         Settings settings = SettingsManager.getSettings();
         LocalDatabase db = new LocalDatabase(demoMode); // Pass demo mode flag to database// Create appropriate clipboard manager based on mode
         if (demoMode) {
             DemoClipboardManager cm = new DemoClipboardManager(db, settings, demoDeviceName);
             System.out.println("🎬 DEMO MODE: Starting as '" + demoDeviceName + "'");
             
-            ClipboardUI ui = new ClipboardUI(db, settings);            ui.setDemoMode(true, demoDeviceName);
+            ClipboardUI ui = new ClipboardUI(db, settings);            
+            ui.setDemoMode(true, demoDeviceName);
             ui.setDemoClipboardManager(cm); // Pass the demo clipboard manager to UI
             
             DemoSyncManager demoSyncManager = new DemoSyncManager(db, demoDeviceName);
@@ -44,7 +54,7 @@ public class Main {
             cm.addClipboardListener(ui);
             cm.addClipboardListener(demoSyncManager);
             demoSyncManager.addClipboardListener(ui);
-              demoSyncManager.initialize();
+            demoSyncManager.initialize();
             System.out.println("Starting demo clipboard listener...");
             cm.startListening();
             
@@ -102,7 +112,8 @@ public class Main {
                 Thread.currentThread().interrupt();
             }
         }
-    }    private static void parseArguments(String[] args) {
+    }    
+    private static void parseArguments(String[] args) {
         int i = 0;
         while (i < args.length) {
             String arg = args[i];
@@ -134,7 +145,8 @@ public class Main {
         } else {
             System.err.println("Unknown argument: " + key);
             printUsage();
-            System.exit(1);        }
+            System.exit(1);        
+        }
         return 1;
     }
     
@@ -162,8 +174,10 @@ public class Main {
         }
         return 1;
     }
-      private static void printUsage() {
+    
+    private static void printUsage() {
         System.out.println("Cuhlippa Clipboard Sync Client");
+        System.out.println("Version: " + VERSION);
         System.out.println("Usage: java -jar cuhlippa-client.jar [OPTIONS]");
         System.out.println("Options:");
         System.out.println("  --demo-mode           Enable demo mode with virtual clipboard isolation");

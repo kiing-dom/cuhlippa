@@ -67,9 +67,35 @@ cuhlippa/                                    # Root project with parent POM
 
 ## 🚀 Production Deployment & Performance
 
-### **Quick Start for Enterprise Environments**
+### **Automated Releases (Recommended)**
 
-#### **1. Build & Package (Production Ready)**
+#### **GitHub Actions CI/CD Pipeline**
+Cuhlippa uses automated GitHub Actions for production releases:
+
+```bash
+# Create a new release (for maintainers)
+git tag v1.0.0
+git push origin v1.0.0
+
+# GitHub Actions automatically:
+# 1. Runs full test suite on multiple platforms (Windows, macOS, Linux)
+# 2. Builds optimized JARs for all modules
+# 3. Creates release package with launchers and documentation
+# 4. Publishes GitHub release with downloadable ZIP
+```
+
+**🎯 For end users**: Simply download the latest release ZIP from [GitHub Releases](../../releases) - no build required!
+
+#### **Release Package Contents**
+- `cuhlippa-server.jar` & `cuhlippa-client.jar` - Ready-to-run applications
+- `start-server.bat/.sh` & `start-client.bat/.sh` - Cross-platform launchers  
+- `demo-mode.bat` - Instant demo with two test clients
+- `config/` - Configuration templates and examples
+- `README.md` - Complete setup and usage guide
+
+### **Manual Build (Development)**
+
+#### **1. Build & Package (Development/Testing)**
 ```bash
 # Clean build with all modules and dependencies
 mvn clean install -Dmaven.test.skip=false
