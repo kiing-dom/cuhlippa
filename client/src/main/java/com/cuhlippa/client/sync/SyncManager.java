@@ -114,7 +114,7 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
         // Skip large images to prevent WebSocket buffer overflow
         if (item.getType() == ItemType.IMAGE) {
             byte[] content = item.getContent();
-            if (content.length > 512 * 1024) {  // 512KB limit
+            if (content.length > 2 * 1024 * 1024) {  // 2MB limit
                 System.out.println("Skipping large image (" + content.length + " bytes) - too big for sync");
                 return;
             }
