@@ -1,6 +1,9 @@
 # github
 .github/copilot-instructions.md
 
+# Internal planning documents (not for public repo)
+PUBLIC_RELEASE_TODO.md
+
 # Maven
 target/
 pom.xml.tag
