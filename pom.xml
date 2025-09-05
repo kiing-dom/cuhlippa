@@ -10,11 +10,11 @@
     <packaging>pom</packaging>
 
     <name>Cuhlippa Parent</name>
-    <description>A clipboard monitoring application</description>   
-     <modules>
+    <description>A clipboard monitoring application</description>     <modules>
         <module>shared</module>
         <module>client</module>
         <module>server</module>
+        <module>packaging</module>
     </modules>
 
     <properties>

@@ -1,0 +1,15 @@
+{
+  "theme": "light",
+  "maxHistoryItems": 100,
+  "thumbnailSize": 64,
+  "ignorePatterns": [],
+  "sync": {
+    "enabled": false,
+    "serverAddress": "",
+    "encryptionKey": ""
+  },
+  "firstRun": true,
+  "autoStart": false,
+  "minimizeToTray": true,
+  "showNotifications": true
+}
