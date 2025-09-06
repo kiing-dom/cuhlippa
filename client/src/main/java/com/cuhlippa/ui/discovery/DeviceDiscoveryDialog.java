@@ -7,15 +7,13 @@ import com.cuhlippa.client.discovery.NetworkDiscoveryService;
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
 
 public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener {
     
-    private final NetworkDiscoveryService discoveryService;
+    private final transient NetworkDiscoveryService discoveryService;
     private final JTable serverTable;
     private final DiscoveredServerTableModel tableModel;
     private final JButton discoverButton;
@@ -25,22 +23,22 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
     private final JLabel statusLabel;
     private final JProgressBar progressBar;
     
-    private DiscoveredServer selectedServer;
+    private transient DiscoveredServer selectedServer;
     private boolean dialogResult = false;
     
     public DeviceDiscoveryDialog(Frame parent) {
-        super(parent, "Discover Cuhlippa Servers", true);
+        super(parent, "Find Other Computers", true);
         
         this.discoveryService = new NetworkDiscoveryService();
         this.tableModel = new DiscoveredServerTableModel();
         
         // Initialize components
         this.serverTable = createServerTable();
-        this.discoverButton = new JButton("🔍 Start Discovery");
-        this.connectButton = new JButton("✓ Connect to Selected");
+        this.discoverButton = new JButton("🔍 Search for Computers");
+        this.connectButton = new JButton("✓ Connect to Selected Computer");
         this.cancelButton = new JButton("✕ Cancel");
         this.refreshButton = new JButton("🔄 Refresh");
-        this.statusLabel = new JLabel("Click 'Start Discovery' to scan for servers");
+        this.statusLabel = new JLabel("Click 'Search for Computers' to find available computers");
         this.progressBar = new JProgressBar();
         
         setupUI();
@@ -81,7 +79,7 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
         JPanel titlePanel = new JPanel(new BorderLayout());
         titlePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 5, 10));
         
-        JLabel titleLabel = new JLabel("🌐 Network Device Discovery");
+        JLabel titleLabel = new JLabel("🌐 Find Computers to Share Clipboard With");
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 16f));
         titlePanel.add(titleLabel, BorderLayout.WEST);
         
@@ -93,7 +91,7 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
         
         // Server list panel
         JPanel listPanel = new JPanel(new BorderLayout());
-        listPanel.setBorder(BorderFactory.createTitledBorder("Discovered Servers"));
+        listPanel.setBorder(BorderFactory.createTitledBorder("Available Computers"));
         
         JScrollPane scrollPane = new JScrollPane(serverTable);
         listPanel.add(scrollPane, BorderLayout.CENTER);
@@ -145,7 +143,7 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
         refreshButton.addActionListener(e -> {
             if (discoveryService.isDiscovering()) {
                 discoveryService.refreshDiscovery();
-                updateStatus("Refreshing discovery...");
+                updateStatus("Refreshing search...");
             }
         });
         
@@ -207,7 +205,7 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
             refreshButton.setEnabled(true);
             progressBar.setIndeterminate(true);
             progressBar.setVisible(true);
-            updateStatus("Scanning network for Cuhlippa servers...");
+            updateStatus("Scanning network for other computers...");
             
         } catch (Exception e) {
             updateStatus("Failed to start discovery: " + e.getMessage());
@@ -220,15 +218,15 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
     private void stopDiscovery() {
         discoveryService.stopDiscovery();
         
-        discoverButton.setText("🔍 Start Discovery");
+        discoverButton.setText("🔍 Search for Computers");
         refreshButton.setEnabled(false);
         progressBar.setVisible(false);
         
         List<DiscoveredServer> servers = tableModel.getServers();
         if (servers.isEmpty()) {
-            updateStatus("No servers found. Try manual IP entry if needed.");
+            updateStatus("No computers found. Try manual entry if needed.");
         } else {
-            updateStatus("Found " + servers.size() + " server(s). Select one to connect.");
+            updateStatus("Found " + servers.size() + " computer(s). Select one to connect.");
         }
     }
     
@@ -250,7 +248,7 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
     public void onServerDiscovered(DiscoveredServer server) {
         SwingUtilities.invokeLater(() -> {
             tableModel.addServer(server);
-            updateStatus("Found " + tableModel.getRowCount() + " server(s). Select one to connect.");
+            updateStatus("Found " + tableModel.getRowCount() + " computer(s). Select one to connect.");
         });
     }
     
@@ -258,7 +256,7 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
     public void onServerLost(DiscoveredServer server) {
         SwingUtilities.invokeLater(() -> {
             tableModel.removeServer(server);
-            updateStatus("Found " + tableModel.getRowCount() + " server(s). Select one to connect.");
+            updateStatus("Found " + tableModel.getRowCount() + " computer(s). Select one to connect.");
         });
     }
     
@@ -268,7 +266,7 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
             if (!active && discoveryService != null) {
                 // Discovery stopped
                 progressBar.setVisible(false);
-                discoverButton.setText("🔍 Start Discovery");
+                discoverButton.setText("🔍 Search for Computers");
                 refreshButton.setEnabled(false);
             }
         });

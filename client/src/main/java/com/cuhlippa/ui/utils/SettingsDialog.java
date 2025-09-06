@@ -38,11 +38,11 @@ public class SettingsDialog extends JDialog {
         ignorePatternsArea.setLineWrap(true);
         ignorePatternsArea.setWrapStyleWord(true);
           // Sync components
-        enableSyncCheckBox = new JCheckBox("Enable Sync");
+        enableSyncCheckBox = new JCheckBox("Sync Clipboards");
         syncServerField = new JTextField(25);
         encryptionKeyField = new JTextField(25);
-        autoDetectButton = new JButton("Auto-Detect");
-        discoverDevicesButton = new JButton("🔍 Discover Devices");
+        autoDetectButton = new JButton("Find Automatically");
+        discoverDevicesButton = new JButton("🔍 Find Devices");
           // Discover devices button action
         discoverDevicesButton.addActionListener(e -> {
             DeviceDiscoveryDialog dialog = new DeviceDiscoveryDialog((Frame) getOwner());
@@ -147,7 +147,7 @@ public class SettingsDialog extends JDialog {
         syncGbc.gridx = 0; syncGbc.gridy = 1;
         syncGbc.gridwidth = 1;
         syncGbc.insets = new Insets(15, 10, 5, 10);
-        syncPanel.add(new JLabel("Server Address:"), syncGbc);
+        syncPanel.add(new JLabel("Computer to Connect to:"), syncGbc);
         syncGbc.gridx = 1;
         syncGbc.fill = GridBagConstraints.HORIZONTAL;
         syncGbc.weightx = 1.0;
@@ -166,7 +166,7 @@ public class SettingsDialog extends JDialog {
 
         syncGbc.gridx = 0; syncGbc.gridy = 3;
         syncGbc.insets = new Insets(15, 10, 5, 10);
-        syncPanel.add(new JLabel("Encryption Key:"), syncGbc);
+        syncPanel.add(new JLabel("Security Password (optional):"), syncGbc);
         syncGbc.gridx = 1;
         syncGbc.fill = GridBagConstraints.HORIZONTAL;
         syncGbc.weightx = 1.0;
@@ -177,8 +177,8 @@ public class SettingsDialog extends JDialog {
         syncGbc.insets = new Insets(10, 10, 5, 10);
         syncGbc.fill = GridBagConstraints.NONE;
         syncGbc.weightx = 0;
-        JLabel infoLabel = new JLabel("<html><i>Note: Leave encryption key empty for no encryption.<br>" +
-                                     "Server address format: ws://[server-ip]:8080/sync</i></html>");
+        JLabel infoLabel = new JLabel("<html><i>Note: Leave the security password empty if the other computer doesnt require one.<br>" +
+                                     "Computer address format: [computer-name-or-ip]:8080</i></html>");
         infoLabel.setFont(infoLabel.getFont().deriveFont(infoLabel.getFont().getSize() - 1.0f));
         syncPanel.add(infoLabel, syncGbc);
 
