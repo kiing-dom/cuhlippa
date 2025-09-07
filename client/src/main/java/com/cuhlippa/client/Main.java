@@ -2,7 +2,6 @@ package com.cuhlippa.client;
 
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
-import javax.swing.JOptionPane;
 
 import com.cuhlippa.client.clipboard.ClipboardManager;
 import com.cuhlippa.client.clipboard.DemoClipboardManager;
@@ -12,6 +11,9 @@ import com.cuhlippa.client.storage.LocalDatabase;
 import com.cuhlippa.client.sync.SyncManager;
 import com.cuhlippa.client.sync.DemoSyncManager;
 import com.cuhlippa.ui.ClipboardUI;
+import com.cuhlippa.ui.welcome.WelcomeDialog;
+import com.cuhlippa.ui.setup.SetupWizard;
+import com.cuhlippa.ui.utils.FirstRunManager;
 
 public class Main {
     private static volatile boolean running = true;
@@ -77,8 +79,10 @@ public class Main {
                 System.out.println("Exiting...");
                 Thread.currentThread().interrupt();
             }
+              } else {
+            // Check for first-run and show welcome dialog if needed
+            handleFirstRunExperience();
             
-        } else {
             ClipboardManager cm = new ClipboardManager(db, settings);
             
             ClipboardUI ui = new ClipboardUI(db, settings);
@@ -171,8 +175,75 @@ public class Main {
             System.err.println("Unknown argument: " + arg);
             printUsage();
             System.exit(1);
+        }        return 1;
+    }
+      /**
+     * Handle the first-run experience by showing welcome dialog and setup wizard
+     */
+    private static void handleFirstRunExperience() {
+        // Check if this is the user's first time running the application
+        if (FirstRunManager.isFirstRun()) {
+            System.out.println("🎉 First run detected - showing welcome experience");
+            
+            // Show welcome dialog on the Event Dispatch Thread asynchronously
+            SwingUtilities.invokeLater(() -> {
+                try {
+                    WelcomeDialog welcomeDialog = new WelcomeDialog(null);
+                    WelcomeDialog.UserChoice choice = welcomeDialog.showWelcomeDialog();
+                      switch (choice) {
+                        case GET_STARTED:
+                            System.out.println("User chose guided setup");
+                            showSetupWizard();
+                            break;
+                            
+                        case ADVANCED_MODE:
+                            System.out.println("User chose advanced mode - skipping to main UI");
+                            FirstRunManager.markFirstRunCompleted();
+                            break;
+                            
+                        case CANCELLED:
+                            System.out.println("User cancelled welcome dialog - continuing to main UI");
+                            // Don't mark as completed so they see welcome again next time
+                            break;
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error showing welcome dialog: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
         }
-        return 1;
+    }
+      /**
+     * Show the setup wizard to guide users through initial configuration
+     */
+    private static void showSetupWizard() {
+        SwingUtilities.invokeLater(() -> {
+            try {
+                SetupWizard setupWizard = new SetupWizard(null);
+                SetupWizard.SetupResult result = setupWizard.showSetupWizard();
+                  switch (result) {
+                    case COMPLETED:
+                        System.out.println("Setup wizard completed successfully");
+                        FirstRunManager.markFirstRunCompleted();
+                        break;
+                        
+                    case SKIPPED_TO_MAIN:
+                        System.out.println("User skipped setup wizard");
+                        FirstRunManager.markFirstRunCompleted();
+                        break;
+                        
+                    case CANCELLED:
+                        System.out.println("Setup wizard cancelled - will show again next time");
+                        // Don't mark as completed so they see it again next time
+                        break;
+                }
+            } catch (Exception e) {
+                System.err.println("Error showing setup wizard: " + e.getMessage());
+                e.printStackTrace();
+                // Fallback to marking as completed to avoid infinite loops
+                FirstRunManager.markFirstRunCompleted();
+            }
+        });
     }
     
     private static void printUsage() {
