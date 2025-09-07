@@ -4,6 +4,7 @@ import com.cuhlippa.shared.discovery.DiscoveryConstants;
 import com.cuhlippa.shared.discovery.DiscoveryMessage;
 import com.cuhlippa.shared.discovery.NetworkDiscoveryProtocol;
 import com.cuhlippa.client.config.DeviceManager;
+import com.cuhlippa.ui.utils.UserFriendlyErrors;
 
 import java.net.DatagramPacket;
 import java.net.MulticastSocket;
@@ -64,9 +65,8 @@ public class NetworkDiscoveryService {
                              DiscoveryConstants.MULTICAST_GROUP + ":" + DiscoveryConstants.DISCOVERY_PORT);
             
             notifyDiscoveryStatusChanged(true);
-            
-        } catch (Exception e) {
-            System.err.println("Failed to start network discovery: " + e.getMessage());
+              } catch (Exception e) {
+            UserFriendlyErrors.logError("Network discovery could not start", "Failed to start network discovery: " + e.getMessage());
             e.printStackTrace();
             isDiscovering.set(false);
         }
@@ -100,10 +100,9 @@ public class NetworkDiscoveryService {
                 if (message.isServerAdvertisement()) {
                     handleServerAdvertisement(message);
                 }
-                
-            } catch (Exception e) {
+                  } catch (Exception e) {
                 if (isDiscovering.get()) { // Only log if we're supposed to be running
-                    System.err.println("Error receiving discovery message: " + e.getMessage());
+                    UserFriendlyErrors.logError("Network discovery communication issue", "Error receiving discovery message: " + e.getMessage());
                 }
             }
         }
@@ -146,9 +145,8 @@ public class NetworkDiscoveryService {
             socket.send(packet);
             
             System.out.println("🔍 Sent discovery request");
-            
-        } catch (Exception e) {
-            System.err.println("Failed to send discovery request: " + e.getMessage());
+              } catch (Exception e) {
+            UserFriendlyErrors.logError("Discovery request failed", "Failed to send discovery request: " + e.getMessage());
         }
     }
     
@@ -201,27 +199,25 @@ public class NetworkDiscoveryService {
             try {
                 listener.onServerDiscovered(server);
             } catch (Exception e) {
-                System.err.println("Error notifying discovery listener: " + e.getMessage());
+                UserFriendlyErrors.logError("Discovery notification failed", "Error notifying discovery listener: " + e.getMessage());
             }
         }
     }
-    
-    private void notifyServerLost(DiscoveredServer server) {
+      private void notifyServerLost(DiscoveredServer server) {
         for (DiscoveryListener listener : listeners) {
             try {
                 listener.onServerLost(server);
             } catch (Exception e) {
-                System.err.println("Error notifying discovery listener: " + e.getMessage());
+                UserFriendlyErrors.logError("Discovery notification failed", "Error notifying discovery listener: " + e.getMessage());
             }
         }
     }
-    
-    private void notifyDiscoveryStatusChanged(boolean active) {
+      private void notifyDiscoveryStatusChanged(boolean active) {
         for (DiscoveryListener listener : listeners) {
             try {
                 listener.onDiscoveryStatusChanged(active);
             } catch (Exception e) {
-                System.err.println("Error notifying discovery listener: " + e.getMessage());
+                UserFriendlyErrors.logError("Discovery notification failed", "Error notifying discovery listener: " + e.getMessage());
             }
         }
     }

@@ -39,9 +39,8 @@ public class NetworkUtils {
                         return addr.getHostAddress();
                     }
                 }
-            }
-        } catch (SocketException e) {
-            System.err.println("Failed to get network IP: " + e.getMessage());
+            }        } catch (SocketException e) {
+            System.err.println("[NETWORK] Could not detect network settings, using localhost fallback: " + e.getMessage());
         }
         
         return "localhost"; // Fallback

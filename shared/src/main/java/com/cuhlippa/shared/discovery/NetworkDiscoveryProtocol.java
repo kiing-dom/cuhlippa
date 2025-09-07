@@ -32,9 +32,8 @@ public class NetworkDiscoveryProtocol {
         try {
             byte[] data = message.toBytes();
             InetAddress group = InetAddress.getByName(DiscoveryConstants.MULTICAST_GROUP);
-            return new DatagramPacket(data, data.length, group, DiscoveryConstants.DISCOVERY_PORT);
-        } catch (Exception e) {
-            throw new IOException("Failed to create discovery packet: " + e.getMessage(), e);
+            return new DatagramPacket(data, data.length, group, DiscoveryConstants.DISCOVERY_PORT);        } catch (Exception e) {
+            throw new IOException("Network discovery setup failed - check your network connection: " + e.getMessage(), e);
         }
     }
 
@@ -68,9 +67,8 @@ public class NetworkDiscoveryProtocol {
                 if (isValidDiscoveryInterface(netInterface)) {
                     interfaces.add(netInterface);
                 }
-            }
-        } catch (SocketException e) {
-            System.err.println("Failed to enumerate network interfaces: " + e.getMessage());
+            }        } catch (SocketException e) {
+            System.err.println("[DISCOVERY] Network interface detection failed, using default settings: " + e.getMessage());
         }
 
         interfaces.sort((a, b) -> {

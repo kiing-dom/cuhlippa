@@ -16,6 +16,7 @@ import com.cuhlippa.ui.utils.ImageSelection;
 import com.cuhlippa.ui.utils.ImageUtils;
 import com.cuhlippa.ui.utils.SettingsDialog;
 import com.cuhlippa.ui.utils.TagEditDialog;
+import com.cuhlippa.ui.utils.UserFriendlyErrors;
 
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
@@ -242,9 +243,9 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         try {
             ImageIcon icon = ImageUtils.createScaledImageIcon(item.getContent());
             imageLabel.setIcon(icon);
-            showCard(IMAGE_CARD);
-        } catch (Exception e) {
-            detailArea.setText("Error loading image: " + e.getMessage());
+            showCard(IMAGE_CARD);        } catch (Exception e) {
+            detailArea.setText("Cannot display this image");
+            UserFriendlyErrors.logError("Image display failed", "Error loading image: " + e.getMessage());
             showCard(TEXT_CARD);
         }
     }
@@ -355,9 +356,9 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                     allItems.remove(selected);
                     listModel.removeElement(selected);
                     clearItemDisplay();
-                    showStatusMessage("Deleted item.");
-                } else {
-                    showStatusMessage("Failed to delete item.");
+                    showStatusMessage("Deleted item.");                } else {
+                    showStatusMessage("Could not delete item.");
+                    UserFriendlyErrors.logError("Delete operation failed", "Failed to delete clipboard item from database");
                 }
             }
         }
@@ -382,9 +383,9 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                 allItems.clear();
                 listModel.clear();
                 clearItemDisplay();
-                showStatusMessage("Deleted all items.");
-            } else {
-                showStatusMessage("Failed to delete all items");
+                showStatusMessage("Deleted all items.");            } else {
+                showStatusMessage("Could not delete all items");
+                UserFriendlyErrors.logError("Clear all operation failed", "Failed to delete all items from database");
             }
         }
     }
@@ -595,7 +596,8 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                 
                 // Refresh the list to show updated pin status
                 itemList.repaint();            } else {
-                showStatusMessage("Failed to toggle pin status");
+                showStatusMessage("Could not update pin status");
+                UserFriendlyErrors.logError("Pin toggle failed", "Failed to toggle pin status in database");
             }
         }
     }
@@ -663,9 +665,9 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                 String enrichedText = "[" + demoDeviceName + "] " + text;
                 demoClipboardManager.copyTextToVirtualClipboard(enrichedText);
                 showStatusMessage("📝 [" + demoDeviceName + "] Copied: " + text);
-                
-            } catch (Exception ex) {
-                showStatusMessage("❌ Demo copy failed: " + ex.getMessage());
+                  } catch (Exception ex) {
+                showStatusMessage("❌ [" + demoDeviceName + "] Copy failed");
+                UserFriendlyErrors.logError("Demo text copy failed", "Demo copy failed: " + ex.getMessage());
             }
         } else if (demoMode) {
             showStatusMessage("❌ Demo clipboard manager not available");
@@ -695,9 +697,9 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                 // Use the demo clipboard manager to properly process the image
                 demoClipboardManager.copyImageToVirtualClipboard(sampleImage);
                 showStatusMessage("🖼️ [" + demoDeviceName + "] Copied sample image");
-                
-            } catch (Exception ex) {
-                showStatusMessage("❌ Demo image copy failed: " + ex.getMessage());
+                  } catch (Exception ex) {
+                showStatusMessage("❌ [" + demoDeviceName + "] Image copy failed");
+                UserFriendlyErrors.logError("Demo image copy failed", "Demo image copy failed: " + ex.getMessage());
             }
         } else if (demoMode) {
             showStatusMessage("❌ Demo clipboard manager not available");

@@ -67,11 +67,11 @@ public class SettingsDialog extends JDialog {
                 String defaultUrl = (String) networkUtilsClass.getMethod("buildDefaultSyncUrl").invoke(null);
                 syncServerField.setText(defaultUrl);
                 JOptionPane.showMessageDialog(this, "Auto-detected server: " + defaultUrl, 
-                                            "Auto-Detection", JOptionPane.INFORMATION_MESSAGE);
-            } catch (Exception ex) {
+                                            "Auto-Detection", JOptionPane.INFORMATION_MESSAGE);            } catch (Exception ex) {
                 syncServerField.setText("ws://localhost:8080/sync");
-                JOptionPane.showMessageDialog(this, "Auto-detection failed. Using default: ws://localhost:8080/sync", 
-                                            "Auto-Detection", JOptionPane.WARNING_MESSAGE);
+                UserFriendlyErrors.showInfo(this,
+                    "Using default connection settings. You can change this later if needed.",
+                    "Auto-detection failed, using default: ws://localhost:8080/sync - " + ex.getMessage());
             }
         });
         
@@ -225,10 +225,10 @@ public class SettingsDialog extends JDialog {
             }
             JOptionPane.showMessageDialog(this, message, "Settings Saved", JOptionPane.INFORMATION_MESSAGE);
             
-            dispose();
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Please enter valid numbers for history items and thumbnail size.", 
-                                        "Invalid Input", JOptionPane.ERROR_MESSAGE);
+            dispose();        } catch (NumberFormatException e) {
+            UserFriendlyErrors.showError(this,
+                "Please check your number settings. History items and thumbnail size must be whole numbers.",
+                "Invalid number format in settings: " + e.getMessage());
         }
     }
 }

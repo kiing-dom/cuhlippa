@@ -3,6 +3,7 @@ package com.cuhlippa.ui.discovery;
 import com.cuhlippa.client.discovery.DiscoveredServer;
 import com.cuhlippa.client.discovery.DiscoveryListener;
 import com.cuhlippa.client.discovery.NetworkDiscoveryService;
+import com.cuhlippa.ui.utils.UserFriendlyErrors;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -206,12 +207,11 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
             progressBar.setIndeterminate(true);
             progressBar.setVisible(true);
             updateStatus("Scanning network for other computers...");
-            
-        } catch (Exception e) {
+              } catch (Exception e) {
             updateStatus("Failed to start discovery: " + e.getMessage());
-            JOptionPane.showMessageDialog(this, 
-                "Failed to start network discovery:\n" + e.getMessage(),
-                "Discovery Error", JOptionPane.ERROR_MESSAGE);
+            UserFriendlyErrors.showError(this,
+                "Could not search for other computers. Check your Wi-Fi connection and firewall settings.",
+                "Failed to start network discovery: " + e.getMessage());
         }
     }
     

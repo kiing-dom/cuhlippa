@@ -12,6 +12,7 @@ import com.cuhlippa.client.config.DeviceManager;
 import com.cuhlippa.client.config.Settings;
 import com.cuhlippa.client.storage.LocalDatabase;
 import com.cuhlippa.client.sync.dto.ClipboardItemDTO;
+import com.cuhlippa.ui.utils.UserFriendlyErrors;
 
 public class SyncManager implements ClipboardListener, SyncClient.SyncMessageListener {
     private final LocalDatabase db;
@@ -36,9 +37,7 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
         for (ClipboardListener listener : listeners) {
             listener.onClipboardItemAdded(item);
         }
-    }
-
-    public void initialize() {
+    }    public void initialize() {
         if (!settings.getSync().isEnabled() || isInitialized)
             return;
 
@@ -48,9 +47,12 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
             CompletableFuture.runAsync(() -> syncClient.connect());
             isInitialized = true;
         } catch (Exception e) {
-            System.out.println("Failed to initialize sync: " + e.getMessage());
+            UserFriendlyErrors.showError(
+                "Could not connect to other computer. Check that both computers are on the same Wi-Fi network.",
+                "Failed to initialize sync to " + settings.getSync().getServerAddress() + ": " + e.getMessage()
+            );
         }
-    }    @Override
+    }@Override
     public void onItemReceived(ClipboardItemDTO dto) {
         System.out.println("SyncManager received item from device: " + dto.getDeviceId());
         try {
@@ -80,9 +82,8 @@ public class SyncManager implements ClipboardListener, SyncClient.SyncMessageLis
                 }
             } else {
                 System.out.println("Item already exists, skipping: " + item.getHash());
-            }
-        } catch (Exception e) {
-            System.err.println("Failed to process sync item: " + e.getMessage());
+            }        } catch (Exception e) {
+            UserFriendlyErrors.logError("Sync item processing failed", "Failed to process sync item: " + e.getMessage());
             e.printStackTrace();
         }
     }
