@@ -31,97 +31,87 @@
     </dependencies>
     
     <properties>
-        <app.name>Cuhlippa</app.name>
+        <app.name>cuhlippa</app.name>
         <app.version>${project.version}</app.version>
         <app.vendor>Cuhlippa Project</app.vendor>
         <app.description>Cross-platform clipboard synchronization</app.description>
         <main.class>com.cuhlippa.client.Main</main.class>
-    </properties>
-    
+    </properties>    
     <build>
         <plugins>
-            <!-- Copy all dependencies to libs folder -->
+            <!-- Copy the client JAR and rename it -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <version>3.6.0</version>
                 <executions>
                     <execution>
-                        <id>copy-dependencies</id>
+                        <id>copy-client-jar</id>
                         <phase>prepare-package</phase>
                         <goals>
-                            <goal>copy-dependencies</goal>
+                            <goal>copy</goal>
                         </goals>
                         <configuration>
-                            <outputDirectory>${project.build.directory}/libs</outputDirectory>
-                            <includeScope>runtime</includeScope>
-                            <excludeTransitive>false</excludeTransitive>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>com.cuhlippa</groupId>
+                                    <artifactId>cuhlippa-client</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>jar</type>
+                                    <overWrite>true</overWrite>
+                                    <outputDirectory>${project.build.directory}</outputDirectory>
+                                    <destFileName>cuhlippa-app.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
             
-            <!-- Create fat JAR for easier packaging -->
+            <!-- Copy the shaded JAR manually -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.5.1</version>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
                 <executions>
                     <execution>
-                        <phase>package</phase>
+                        <id>copy-shaded-jar</id>
+                        <phase>prepare-package</phase>
                         <goals>
-                            <goal>shade</goal>
+                            <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <finalName>cuhlippa-app</finalName>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>${main.class}</mainClass>
-                                </transformer>
-                            </transformers>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>../client/target</directory>
+                                    <includes>
+                                        <include>cuhlippa-client-*-jar-with-dependencies.jar</include>
+                                    </includes>
+                                </resource>
+                            </resources>
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>            <!-- jpackage plugin for native installers -->
+            </plugin>
+            
+            <!-- Rename the copied JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-exec-plugin</artifactId>
+                <artifactId>maven-antrun-plugin</artifactId>
                 <version>3.1.0</version>
                 <executions>
                     <execution>
-                        <id>create-app-image</id>
-                        <phase>package</phase>
+                        <id>rename-jar</id>
+                        <phase>prepare-package</phase>
                         <goals>
-                            <goal>exec</goal>
-                        </goals>                        <configuration>
-                            <executable>C:\Program Files\Java\jdk-22\bin\jpackage.exe</executable>
-                            <arguments>
-                                <argument>--input</argument>
-                                <argument>target</argument>
-                                <argument>--main-jar</argument>
-                                <argument>cuhlippa-app.jar</argument>
-                                <argument>--main-class</argument>
-                                <argument>${main.class}</argument>
-                                <argument>--name</argument>
-                                <argument>${app.name}</argument>
-                                <argument>--app-version</argument>
-                                <argument>${app.version}</argument>
-                                <argument>--vendor</argument>
-                                <argument>${app.vendor}</argument>
-                                <argument>--description</argument>
-                                <argument>${app.description}</argument>
-                                <argument>--dest</argument>
-                                <argument>target/installer</argument>
-                                <argument>--type</argument>
-                                <argument>msi</argument>
-                                <argument>--win-dir-chooser</argument>
-                                <argument>--win-menu</argument>
-                                <argument>--win-shortcut</argument>
-                                <argument>--win-menu-group</argument>
-                                <argument>Productivity</argument>
-                                <argument>--icon</argument>
-                                <argument>src/main/resources/icons/cuhlippa256.ico</argument>
-                            </arguments>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <move file="${project.build.directory}/cuhlippa-client-1.0.0-jar-with-dependencies.jar" 
+                                      tofile="${project.build.directory}/cuhlippa-app.jar"/>
+                            </target>
                         </configuration>
                     </execution>
                 </executions>
@@ -148,9 +138,16 @@
                                 <phase>package</phase>
                                 <goals>
                                     <goal>jpackage</goal>
-                                </goals>
-                                <configuration>
-                                    <type>app-image</type>
+                                </goals>                                <configuration>
+                                    <type>MSI</type>
+                                    <name>${app.name}</name>
+                                    <appVersion>${app.version}</appVersion>
+                                    <vendor>${app.vendor}</vendor>
+                                    <description>${app.description}</description>
+                                    <mainClass>${main.class}</mainClass>
+                                    <mainJar>cuhlippa-app.jar</mainJar>
+                                    <destination>target/installer</destination>
+                                    <input>target</input>
                                     <winDirChooser>true</winDirChooser>
                                     <winMenu>true</winMenu>
                                     <winShortcut>true</winShortcut>
