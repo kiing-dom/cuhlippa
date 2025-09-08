@@ -27,7 +27,7 @@ create-release.bat
 ### Method 2: Manual GitHub Actions
 
 1. Go to your repository on GitHub
-2. Click **Actions** → **Enhanced Release**
+2. Click **Actions** → **Release**
 3. Click **Run workflow**
 4. Fill in the form:
    - **Version**: e.g., `1.0.1`

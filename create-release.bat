@@ -94,7 +94,7 @@ REM Trigger the GitHub Actions workflow
 echo.
 echo 🔧 Triggering release workflow...
 
-gh workflow run enhanced-release.yml -f version="%VERSION%" -f release_title="%TITLE%" -f release_notes="%NOTES%" -f draft="%DRAFT_FLAG%" -f prerelease="%PRERELEASE_FLAG%"
+gh workflow run release.yml -f version="%VERSION%" -f release_title="%TITLE%" -f release_notes="%NOTES%" -f draft="%DRAFT_FLAG%" -f prerelease="%PRERELEASE_FLAG%"
 
 echo ✅ Release workflow triggered!
 echo.

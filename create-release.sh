@@ -89,7 +89,7 @@ fi
 echo ""
 echo -e "${BLUE}🔧 Triggering release workflow...${NC}"
 
-gh workflow run enhanced-release.yml \
+gh workflow run release.yml \
     -f version="$VERSION" \
     -f release_title="$TITLE" \
     -f release_notes="$NOTES" \
