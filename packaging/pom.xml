@@ -179,8 +179,16 @@
                                 <phase>package</phase>
                                 <goals>
                                     <goal>jpackage</goal>
-                                </goals>
-                                <configuration>
+                                </goals>                                <configuration>
+                                    <type>DMG</type>
+                                    <name>${app.name}</name>
+                                    <appVersion>${app.version}</appVersion>
+                                    <vendor>${app.vendor}</vendor>
+                                    <description>${app.description}</description>
+                                    <mainClass>${main.class}</mainClass>
+                                    <mainJar>cuhlippa-app.jar</mainJar>
+                                    <destination>target/installer</destination>
+                                    <input>target</input>
                                     <icon>src/main/resources/icons/cuhlippa1024.icns</icon>
                                     <macPackageName>${app.name}</macPackageName>
                                     <macBundleName>${app.name}</macBundleName>
@@ -211,8 +219,16 @@
                                 <phase>package</phase>
                                 <goals>
                                     <goal>jpackage</goal>
-                                </goals>
-                                <configuration>
+                                </goals>                                <configuration>
+                                    <type>DEB</type>
+                                    <name>${app.name}</name>
+                                    <appVersion>${app.version}</appVersion>
+                                    <vendor>${app.vendor}</vendor>
+                                    <description>${app.description}</description>
+                                    <mainClass>${main.class}</mainClass>
+                                    <mainJar>cuhlippa-app.jar</mainJar>
+                                    <destination>target/installer</destination>
+                                    <input>target</input>
                                     <linuxPackageName>cuhlippa</linuxPackageName>
                                     <linuxAppCategory>Office</linuxAppCategory>
                                     <linuxMenuGroup>Productivity</linuxMenuGroup>
