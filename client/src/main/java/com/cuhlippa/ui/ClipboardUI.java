@@ -52,10 +52,10 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
     private JLabel statusBar;
     private JPanel detailPanel;
     private JTextField searchField;
-      // Demo mode fields
+    // Demo mode fields
     private boolean demoMode = false;
     private String demoDeviceName = null;
-    private com.cuhlippa.client.clipboard.DemoClipboardManager demoClipboardManager = null;
+    private transient com.cuhlippa.client.clipboard.DemoClipboardManager demoClipboardManager = null;
 
     public ClipboardUI(LocalDatabase db, Settings settings) {
         super("Cuhlippa");
@@ -69,25 +69,26 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         applyTheme();
         loadItems();
     }
-      /**
+
+    /**
      * Enable demo mode with enhanced UI indicators
      */
     public void setDemoMode(boolean demoMode, String deviceName) {
         this.demoMode = demoMode;
         this.demoDeviceName = deviceName;
-        
+
         if (demoMode) {
             // Update window title with demo indicator
             setTitle("🎬 Cuhlippa DEMO - " + deviceName);
-            
+
             // Add demo mode indicator to status bar
             showStatusMessage("🎬 DEMO MODE: " + deviceName + " - Virtual clipboard active");
-            
+
             // Add demo controls to the UI
             addDemoControls();
         }
     }
-    
+
     /**
      * Set the demo clipboard manager for demo mode
      */
@@ -243,7 +244,8 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         try {
             ImageIcon icon = ImageUtils.createScaledImageIcon(item.getContent());
             imageLabel.setIcon(icon);
-            showCard(IMAGE_CARD);        } catch (Exception e) {
+            showCard(IMAGE_CARD);
+        } catch (Exception e) {
             detailArea.setText("Cannot display this image");
             UserFriendlyErrors.logError("Image display failed", "Error loading image: " + e.getMessage());
             showCard(TEXT_CARD);
@@ -288,7 +290,9 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                 deleteAllItems();
             }
         });
-    }    private void showContextMenu(MouseEvent e) {
+    }
+
+    private void showContextMenu(MouseEvent e) {
         int index = itemList.locationToIndex(e.getPoint());
         if (index >= 0) {
             itemList.setSelectedIndex(index);
@@ -297,11 +301,11 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
             JPopupMenu contextMenu = new JPopupMenu();
             JMenuItem copyItem = new JMenuItem("Copy to Clipboard");
             JMenuItem editTagsItem = new JMenuItem("Edit Tags");
-            
+
             // Pin/Unpin menu item
             boolean isPinned = selectedItem != null && selectedItem.isPinned();
             JMenuItem pinItem = new JMenuItem(isPinned ? "Unpin Item" : "Pin Item");
-            
+
             JMenuItem deleteItem = new JMenuItem("Delete Item");
             JMenuItem deleteAll = new JMenuItem("Delete All");
 
@@ -356,9 +360,11 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                     allItems.remove(selected);
                     listModel.removeElement(selected);
                     clearItemDisplay();
-                    showStatusMessage("Deleted item.");                } else {
+                    showStatusMessage("Deleted item.");
+                } else {
                     showStatusMessage("Could not delete item.");
-                    UserFriendlyErrors.logError("Delete operation failed", "Failed to delete clipboard item from database");
+                    UserFriendlyErrors.logError("Delete operation failed",
+                            "Failed to delete clipboard item from database");
                 }
             }
         }
@@ -383,7 +389,8 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                 allItems.clear();
                 listModel.clear();
                 clearItemDisplay();
-                showStatusMessage("Deleted all items.");            } else {
+                showStatusMessage("Deleted all items.");
+            } else {
                 showStatusMessage("Could not delete all items");
                 UserFriendlyErrors.logError("Clear all operation failed", "Failed to delete all items from database");
             }
@@ -590,18 +597,19 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
             if (success) {
                 // Update the item's pin status in memory
                 selected.setPinned(!selected.isPinned());
-                
+
                 String action = selected.isPinned() ? "pinned" : "unpinned";
                 showStatusMessage("Item " + action + " successfully");
-                
+
                 // Refresh the list to show updated pin status
-                itemList.repaint();            } else {
+                itemList.repaint();
+            } else {
                 showStatusMessage("Could not update pin status");
                 UserFriendlyErrors.logError("Pin toggle failed", "Failed to toggle pin status in database");
             }
         }
     }
-    
+
     /**
      * Add demo controls for simulating clipboard operations
      */
@@ -609,11 +617,11 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
         // Create demo control panel
         JPanel demoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         demoPanel.setBorder(BorderFactory.createTitledBorder("🎬 Demo Controls"));
-        
+
         // Demo text input
         JTextField demoTextInput = new JTextField(20);
         demoTextInput.setToolTipText("Enter text to copy to virtual clipboard");
-        
+
         JButton copyTextButton = new JButton("📝 Copy Text");
         copyTextButton.addActionListener(e -> {
             String text = demoTextInput.getText().trim();
@@ -624,19 +632,19 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                 showStatusMessage("⚠️ Please enter some text to copy");
             }
         });
-        
+
         JButton copyImageButton = new JButton("🖼️ Copy Sample Image");
         copyImageButton.addActionListener(e -> simulateCopyImage());
-        
+
         JButton pasteButton = new JButton("📋 Paste from Virtual Clipboard");
         pasteButton.addActionListener(e -> simulatePaste());
-        
+
         demoPanel.add(new JLabel("Text:"));
         demoPanel.add(demoTextInput);
         demoPanel.add(copyTextButton);
         demoPanel.add(copyImageButton);
         demoPanel.add(pasteButton);
-        
+
         // Add demo panel to the top of the window
         Container contentPane = getContentPane();
         if (contentPane.getLayout() instanceof BorderLayout) {
@@ -648,14 +656,15 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
             topPanel.add(demoPanel, BorderLayout.SOUTH);
             contentPane.add(topPanel, BorderLayout.NORTH);
         }
-        
+
         // Allow Enter key to trigger copy text
         demoTextInput.addActionListener(e -> copyTextButton.doClick());
-        
+
         revalidate();
         repaint();
     }
-      /**
+
+    /**
      * Simulate copying text to virtual clipboard in demo mode
      */
     private void simulateCopyText(String text) {
@@ -665,7 +674,7 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                 String enrichedText = "[" + demoDeviceName + "] " + text;
                 demoClipboardManager.copyTextToVirtualClipboard(enrichedText);
                 showStatusMessage("📝 [" + demoDeviceName + "] Copied: " + text);
-                  } catch (Exception ex) {
+            } catch (Exception ex) {
                 showStatusMessage("❌ [" + demoDeviceName + "] Copy failed");
                 UserFriendlyErrors.logError("Demo text copy failed", "Demo copy failed: " + ex.getMessage());
             }
@@ -673,31 +682,33 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
             showStatusMessage("❌ Demo clipboard manager not available");
         }
     }
-      /**
+
+    /**
      * Simulate copying a sample image in demo mode
      */
     private void simulateCopyImage() {
         if (demoMode && demoClipboardManager != null) {
             try {
                 // Create a simple sample image (colored rectangle with device name)
-                java.awt.image.BufferedImage sampleImage = new java.awt.image.BufferedImage(200, 100, java.awt.image.BufferedImage.TYPE_INT_RGB);
+                java.awt.image.BufferedImage sampleImage = new java.awt.image.BufferedImage(200, 100,
+                        java.awt.image.BufferedImage.TYPE_INT_RGB);
                 java.awt.Graphics2D g2d = sampleImage.createGraphics();
-                
+
                 // Fill with a gradient
                 g2d.setColor(demoDeviceName.contains("Device-A") ? Color.BLUE : Color.GREEN);
                 g2d.fillRect(0, 0, 200, 100);
-                
+
                 g2d.setColor(Color.WHITE);
                 g2d.setFont(new Font("Arial", Font.BOLD, 16));
                 g2d.drawString(demoDeviceName, 10, 30);
                 g2d.drawString("Sample Image", 10, 50);
                 g2d.drawString(java.time.LocalTime.now().toString().substring(0, 8), 10, 70);
                 g2d.dispose();
-                
+
                 // Use the demo clipboard manager to properly process the image
                 demoClipboardManager.copyImageToVirtualClipboard(sampleImage);
                 showStatusMessage("🖼️ [" + demoDeviceName + "] Copied sample image");
-                  } catch (Exception ex) {
+            } catch (Exception ex) {
                 showStatusMessage("❌ [" + demoDeviceName + "] Image copy failed");
                 UserFriendlyErrors.logError("Demo image copy failed", "Demo image copy failed: " + ex.getMessage());
             }
@@ -705,7 +716,7 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
             showStatusMessage("❌ Demo clipboard manager not available");
         }
     }
-    
+
     /**
      * Simulate pasting from virtual clipboard in demo mode
      */
@@ -716,7 +727,8 @@ public class ClipboardUI extends JFrame implements ClipboardListener {
                 String content = new String(latestItem.getContent());
                 showStatusMessage("📋 [" + demoDeviceName + "] Pasted: " + content);
             } else {
-                showStatusMessage("📋 [" + demoDeviceName + "] Pasted " + latestItem.getType().toString().toLowerCase());
+                showStatusMessage(
+                        "📋 [" + demoDeviceName + "] Pasted " + latestItem.getType().toString().toLowerCase());
             }
         } else {
             showStatusMessage("📋 No items to paste");

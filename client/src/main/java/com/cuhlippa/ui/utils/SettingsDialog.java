@@ -38,11 +38,11 @@ public class SettingsDialog extends JDialog {
         ignorePatternsArea.setLineWrap(true);
         ignorePatternsArea.setWrapStyleWord(true);
           // Sync components
-        enableSyncCheckBox = new JCheckBox("Sync Clipboards");
+        enableSyncCheckBox = new JCheckBox("Share Clipboard");
         syncServerField = new JTextField(25);
         encryptionKeyField = new JTextField(25);
         autoDetectButton = new JButton("Find Automatically");
-        discoverDevicesButton = new JButton("🔍 Find Devices");
+        discoverDevicesButton = new JButton("Find Devices");
           // Discover devices button action
         discoverDevicesButton.addActionListener(e -> {
             DeviceDiscoveryDialog dialog = new DeviceDiscoveryDialog((Frame) getOwner());
