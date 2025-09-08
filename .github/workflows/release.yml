@@ -4,15 +4,179 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:  # Allow manual releases
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.0.0)'
+        required: true
+        default: '1.0.0'
+      release_title:
+        description: 'Custom release title'
+        required: false
+        default: ''
+      release_notes:
+        description: 'Custom release notes (markdown supported)'
+        required: false
+        default: ''
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        default: false
+        type: boolean
+      draft:
+        description: 'Create as draft'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
   packages: write
 
 jobs:
-  create-release:
-    name: Create Release
+  prepare-release:
+    name: Prepare Release Information
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release_title: ${{ steps.release_info.outputs.title }}
+      release_body: ${{ steps.release_info.outputs.body }}
+      is_prerelease: ${{ steps.release_info.outputs.prerelease }}
+      is_draft: ${{ steps.release_info.outputs.draft }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Extract version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Prepare release information
+      id: release_info
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        
+        # Set release title
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.release_title }}" ]; then
+          echo "title=${{ github.event.inputs.release_title }}" >> $GITHUB_OUTPUT
+        else
+          echo "title=Cuhlippa v${VERSION} - Professional Clipboard Sync" >> $GITHUB_OUTPUT
+        fi
+        
+        # Set prerelease and draft flags
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          echo "prerelease=${{ github.event.inputs.prerelease }}" >> $GITHUB_OUTPUT
+          echo "draft=${{ github.event.inputs.draft }}" >> $GITHUB_OUTPUT
+        else
+          echo "prerelease=false" >> $GITHUB_OUTPUT
+          echo "draft=false" >> $GITHUB_OUTPUT
+        fi
+        
+        # Create release body
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.release_notes }}" ]; then
+          # Use custom release notes
+          cat > release_body.md << 'EOF'
+        ${{ github.event.inputs.release_notes }}
+        EOF
+        else
+          # Generate standard release notes
+          cat > release_body.md << EOF
+        # 🚀 Cuhlippa v${VERSION} - Professional Clipboard Synchronization
+        
+        **Ready for production use!** Zero-configuration clipboard sync with automatic device discovery.
+        
+        ## ✨ Key Features
+        - **🔍 Automatic Device Discovery** - No manual IP configuration needed
+        - **📱 Cross-Platform Support** - Windows, macOS, and Linux native installers
+        - **🖼️ Rich Content Sync** - Text, images, files up to 10MB
+        - **🔒 Enterprise Security** - Optional AES encryption
+        - **🎨 Professional UI** - Modern interface with dark/light themes
+        - **⚡ Real-Time Sync** - Instant clipboard synchronization
+        - **🏷️ Smart Organization** - Tags, search, categories, and pinning
+        
+        ## 📦 Installation Options
+        
+        ### Native Installers (Recommended)
+        - **Windows**: \`Cuhlippa-Windows-${VERSION}.msi\` - Double-click to install
+        - **macOS**: \`Cuhlippa-macOS-${VERSION}.dmg\` - Drag to Applications
+        - **Linux**: \`Cuhlippa-Linux-${VERSION}.deb\` - \`sudo apt install ./cuhlippa*.deb\`
+        
+        ### Portable Version
+        - **All Platforms**: \`cuhlippa-${VERSION}.zip\` - Requires Java 17+
+        
+        ## 🚀 Quick Start Guide
+        
+        ### Native Installers (Zero Configuration)
+        1. Download the installer for your platform
+        2. Install and launch Cuhlippa
+        3. Follow the setup wizard - automatic networking included!
+        
+        ### Portable Version
+        1. Download \`cuhlippa-${VERSION}.zip\`
+        2. Extract and run the launcher for your platform:
+           - Windows: \`start-client.bat\`
+           - macOS/Linux: \`./start-client.sh\`
+        3. Use the automatic device discovery feature
+        
+        ## 🔧 System Requirements
+        
+        ### Native Installers
+        - **Windows**: Windows 10+ (64-bit)
+        - **macOS**: macOS 10.14+ (Mojave)
+        - **Linux**: Ubuntu 18.04+, CentOS 7+
+        - **Java**: Bundled - no separate installation needed!
+        
+        ### Portable Version
+        - **Java**: OpenJDK 17+ required on all devices
+        - **Network**: Local WiFi/LAN connectivity
+        - **Firewall**: Allow ports 8080 (sync) and 8081 (discovery)
+        
+        ## 📋 What's New in v${VERSION}
+        - ✅ First-run setup wizard for non-technical users
+        - ✅ Automatic embedded server with zero-config networking
+        - ✅ User-friendly error messages (no technical jargon)
+        - ✅ Native installers with bundled Java runtime
+        - ✅ Professional UI with intuitive terminology
+        - ✅ Comprehensive documentation and quick-start guides
+        
+        ## 🚨 Troubleshooting
+        
+        **Can't find other devices?**
+        - Ensure all devices are on the same WiFi network
+        - Check firewall settings (ports 8080/8081)
+        - Try the manual IP connection option
+        
+        **Installation issues?**
+        - Windows: Right-click installer → "Run as administrator"
+        - macOS: System Preferences → Security → Allow app
+        - Linux: \`sudo apt update && sudo apt install ./cuhlippa*.deb\`
+        
+        ## 📖 Documentation
+        - **Quick Start**: See README.md in download
+        - **Advanced Setup**: See config templates included
+        - **Troubleshooting**: Check SYSTEM_REQUIREMENTS.md
+        
+        ---
+        
+        **Enterprise-ready clipboard synchronization** - Download now and sync effortlessly across all your devices! 🎯
+        EOF
+        fi
+        
+        # Store the release body as output
+        echo "body<<EOF" >> $GITHUB_OUTPUT
+        cat release_body.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+  build-windows:
+    name: Build Windows Installer
+    runs-on: windows-latest
+    needs: prepare-release
     
     steps:
     - name: Checkout code
@@ -31,23 +195,91 @@ jobs:
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
         
-    - name: Extract version from tag
-      id: extract_version
-      run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-      
-    - name: Run tests
-      run: mvn clean test -B
-      
-    - name: Build applications
-      run: mvn package -DskipTests -B
-      
-    - name: Create release directory
+    - name: Update version in POM
       run: |
-        mkdir -p release/cuhlippa-${{ steps.extract_version.outputs.VERSION }}
-        cd release/cuhlippa-${{ steps.extract_version.outputs.VERSION }}
+        $version = "${{ needs.prepare-release.outputs.version }}"
+        (Get-Content pom.xml) -replace '<version>1\.0\.0</version>', "<version>$version</version>" | Set-Content pom.xml
         
-        # Copy JARs with simplified names
-        cp ../../server/target/cuhlippa-server-*.jar ./cuhlippa-server.jar
+    - name: Build and package
+      run: mvn clean package -pl packaging -am -DskipTests
+      
+    - name: Upload Windows Installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-installer
+        path: packaging/target/installer/*.msi
+        
+  build-macos:
+    name: Build macOS Installer  
+    runs-on: macos-latest
+    needs: prepare-release
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Cache Maven dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+        
+    - name: Update version in POM
+      run: |
+        VERSION="${{ needs.prepare-release.outputs.version }}"
+        sed -i '' "s/<version>1\.0\.0<\/version>/<version>$VERSION<\/version>/g" pom.xml
+        
+    - name: Build and package
+      run: mvn clean package -pl packaging -am -DskipTests -P macos
+      
+    - name: Upload macOS Installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-installer
+        path: packaging/target/installer/*.dmg
+        
+  build-linux:
+    name: Build Linux Installer
+    runs-on: ubuntu-latest 
+    needs: prepare-release
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Cache Maven dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+        
+    - name: Update version in POM
+      run: |
+        VERSION="${{ needs.prepare-release.outputs.version }}"
+        sed -i "s/<version>1\.0\.0<\/version>/<version>$VERSION<\/version>/g" pom.xml
+        
+    - name: Build and package
+      run: mvn clean package -pl packaging -am -DskipTests -P linux
+      
+    - name: Upload Linux Installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: linux-installer
+        path: packaging/target/installer/*.deb
         cp ../../client/target/cuhlippa-client-*.jar ./cuhlippa-client.jar
         
         # Create launcher scripts
