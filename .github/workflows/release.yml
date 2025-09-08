@@ -98,7 +98,6 @@ jobs:
         - **🔒 Enterprise Security** - Optional AES encryption
         - **🎨 Professional UI** - Modern interface with dark/light themes
         - **⚡ Real-Time Sync** - Instant clipboard synchronization
-        - **🏷️ Smart Organization** - Tags, search, categories, and pinning
         
         ## 📦 Installation Options
         
@@ -117,11 +116,6 @@ jobs:
         2. Install and launch Cuhlippa
         3. Follow the setup wizard - automatic networking included!
         
-        ### Portable Version
-        1. Download \`cuhlippa-${VERSION}.zip\`
-        2. Extract and run the launcher for your platform
-        3. Use the automatic device discovery feature
-        
         ## 🔧 System Requirements
         
         ### Native Installers
@@ -130,18 +124,12 @@ jobs:
         - **Linux**: Ubuntu 18.04+, CentOS 7+
         - **Java**: Bundled - no separate installation needed!
         
-        ### Portable Version
-        - **Java**: OpenJDK 17+ required on all devices
-        - **Network**: Local WiFi/LAN connectivity
-        - **Firewall**: Allow ports 8080 (sync) and 8081 (discovery)
-        
         ## 📋 What's New in v${VERSION}
         - ✅ First-run setup wizard for non-technical users
         - ✅ Automatic embedded server with zero-config networking
         - ✅ User-friendly error messages (no technical jargon)
         - ✅ Native installers with bundled Java runtime
         - ✅ Professional UI with intuitive terminology
-        - ✅ Comprehensive documentation and quick-start guides
         
         ## 🚨 Troubleshooting
         
@@ -150,19 +138,9 @@ jobs:
         - Check firewall settings (ports 8080/8081)
         - Try the manual IP connection option
         
-        **Installation issues?**
-        - Windows: Right-click installer → "Run as administrator"
-        - macOS: System Preferences → Security → Allow app
-        - Linux: \`sudo apt update && sudo apt install ./cuhlippa*.deb\`
-        
-        ## 📖 Documentation
-        - **Quick Start**: See README.md in download
-        - **Advanced Setup**: See config templates included
-        - **Troubleshooting**: Check SYSTEM_REQUIREMENTS.md
-        
         ---
         
-        **Enterprise-ready clipboard synchronization** - Download now and sync effortlessly across all your devices! 🎯
+        **Enterprise-ready clipboard synchronization** - Download now and sync effortlessly! 🎯
         EOF
         fi
         
@@ -193,21 +171,18 @@ jobs:
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
         
-    - name: Update version in POM
-      run: |
-        $version = "${{ needs.prepare-release.outputs.version }}"
-        (Get-Content pom.xml) -replace '<version>1\.0\.0</version>', "<version>$version</version>" | Set-Content pom.xml
-        
     - name: Build and package
       run: mvn clean package -pl packaging -am -DskipTests
       
     - name: Rename installer
       run: |
         $version = "${{ needs.prepare-release.outputs.version }}"
-        if (Test-Path "packaging/target/installer/cuhlippa-$version.msi") {
-          Rename-Item "packaging/target/installer/cuhlippa-$version.msi" "Cuhlippa-Windows-$version.msi"
+        cd packaging/target/installer
+        if (Test-Path "cuhlippa-*.msi") {
+          Get-ChildItem -Name "cuhlippa-*.msi" | ForEach-Object { Rename-Item $_ "Cuhlippa-Windows-$version.msi" }
         } else {
-          Rename-Item "packaging/target/installer/*.msi" "Cuhlippa-Windows-$version.msi"
+          Write-Host "No MSI file found"
+          Get-ChildItem
         }
         
     - name: Upload Windows Installer
@@ -238,11 +213,6 @@ jobs:
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
         
-    - name: Update version in POM
-      run: |
-        VERSION="${{ needs.prepare-release.outputs.version }}"
-        sed -i '' "s/<version>1\.0\.0<\/version>/<version>$VERSION<\/version>/g" pom.xml
-        
     - name: Build and package
       run: mvn clean package -pl packaging -am -DskipTests -P macos
       
@@ -250,10 +220,14 @@ jobs:
       run: |
         VERSION="${{ needs.prepare-release.outputs.version }}"
         cd packaging/target/installer
-        if [ -f "cuhlippa-$VERSION.dmg" ]; then
-          mv "cuhlippa-$VERSION.dmg" "Cuhlippa-macOS-$VERSION.dmg"
+        if ls cuhlippa*.dmg 1> /dev/null 2>&1; then
+          for file in cuhlippa*.dmg; do
+            mv "$file" "Cuhlippa-macOS-$VERSION.dmg"
+            break
+          done
         else
-          mv *.dmg "Cuhlippa-macOS-$VERSION.dmg"
+          echo "No DMG file found"
+          ls -la
         fi
         
     - name: Upload macOS Installer
@@ -284,11 +258,6 @@ jobs:
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
         
-    - name: Update version in POM
-      run: |
-        VERSION="${{ needs.prepare-release.outputs.version }}"
-        sed -i "s/<version>1\.0\.0<\/version>/<version>$VERSION<\/version>/g" pom.xml
-        
     - name: Build and package
       run: mvn clean package -pl packaging -am -DskipTests -P linux
       
@@ -296,10 +265,14 @@ jobs:
       run: |
         VERSION="${{ needs.prepare-release.outputs.version }}"
         cd packaging/target/installer
-        if [ -f "cuhlippa-$VERSION.deb" ]; then
-          mv "cuhlippa-$VERSION.deb" "Cuhlippa-Linux-$VERSION.deb"
+        if ls cuhlippa*.deb 1> /dev/null 2>&1; then
+          for file in cuhlippa*.deb; do
+            mv "$file" "Cuhlippa-Linux-$VERSION.deb"
+            break
+          done
         else
-          mv *.deb "Cuhlippa-Linux-$VERSION.deb"
+          echo "No DEB file found"
+          ls -la
         fi
         
     - name: Upload Linux Installer
@@ -329,11 +302,6 @@ jobs:
         path: ~/.m2
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
-        
-    - name: Update version in POM
-      run: |
-        VERSION="${{ needs.prepare-release.outputs.version }}"
-        sed -i "s/<version>1\.0\.0<\/version>/<version>$VERSION<\/version>/g" pom.xml
         
     - name: Build applications
       run: mvn clean package -DskipTests
