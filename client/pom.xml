@@ -23,6 +23,12 @@
             <artifactId>cuhlippa-shared</artifactId>
             <version>1.0.0</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.cuhlippa</groupId>
+            <artifactId>cuhlippa-server</artifactId>
+            <version>1.0.0</version>
+        </dependency>
         
         <!-- Your existing dependencies -->
         <dependency>

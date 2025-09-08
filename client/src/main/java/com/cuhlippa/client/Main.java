@@ -2,14 +2,20 @@ package com.cuhlippa.client;
 
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import org.springframework.boot.SpringApplication;
+import java.util.concurrent.CompletableFuture;
 
 import com.cuhlippa.client.clipboard.ClipboardManager;
 import com.cuhlippa.client.clipboard.DemoClipboardManager;
 import com.cuhlippa.client.config.Settings;
 import com.cuhlippa.client.config.SettingsManager;
+import com.cuhlippa.client.discovery.NetworkDiscoveryService;
 import com.cuhlippa.client.storage.LocalDatabase;
 import com.cuhlippa.client.sync.SyncManager;
 import com.cuhlippa.client.sync.DemoSyncManager;
+
+import com.cuhlippa.server.SyncServerApplication;
+
 import com.cuhlippa.ui.ClipboardUI;
 import com.cuhlippa.ui.welcome.WelcomeDialog;
 import com.cuhlippa.ui.setup.SetupWizard;
@@ -87,6 +93,8 @@ public class Main {
             
             ClipboardUI ui = new ClipboardUI(db, settings);
             SyncManager syncManager = new SyncManager(db, settings);
+
+            startEmbeddedServerIfNeeded();
             
             cm.addClipboardListener(ui);
             cm.addClipboardListener(syncManager);
@@ -262,5 +270,57 @@ public class Main {
         System.out.println("Note: Both formats are supported:");
         System.out.println("  --device-name \"Device Name\"  (space-separated)");
         System.out.println("  --device-name=DeviceName     (equals format)");
+    }    private static void startEmbeddedServerIfNeeded() {
+        if (!hasActiveServerOnNetwork()) {
+            System.out.println("🔧 No server found on network - starting embedded server...");
+            startEmbeddedServer();
+
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            
+            // Auto-configure sync settings for embedded server
+            configureEmbeddedServerSettings();
+        } else {
+            System.out.println("✅ Found existing server on network");
+        }
+    }    private static boolean hasActiveServerOnNetwork() {
+        try {
+            NetworkDiscoveryService discovery = new NetworkDiscoveryService();
+
+            discovery.startDiscovery();
+            Thread.sleep(2000);
+
+            boolean hasServers = !discovery.getDiscoveredServers().isEmpty();
+            discovery.stopDiscovery();
+
+            return hasServers;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
+    }private static void startEmbeddedServer() {
+        CompletableFuture.runAsync(() -> {
+            try {
+                System.setProperty("server.port", "8080");
+                SpringApplication.run(SyncServerApplication.class);
+            } catch (Exception e) {
+                System.err.println("Failed to start embedded server: " + e.getMessage());
+            }
+        });
+    }
+
+    private static void configureEmbeddedServerSettings() {
+        Settings settings = SettingsManager.getSettings();
+        if (!settings.getSync().isEnabled()) {
+            settings.getSync().setEnabled(true);
+            settings.getSync().setServerAddress("ws://localhost:8080/sync");
+            SettingsManager.saveSettings();
+            System.out.println("🔧 Auto-configured sync to embedded server");
+        }
     }
 }
