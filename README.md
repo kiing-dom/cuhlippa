@@ -81,13 +81,11 @@ Found a bug or want to suggest a feature?
 
 - **Issues**: [Report bugs here](https://github.com/kiing-dom/cuhlippa/issues)
 - **Discussions**: [Feature requests and questions](https://github.com/kiing-dom/cuhlippa/discussions)
-- **Contributing**: See our [contribution guidelines](CONTRIBUTING.md)
 
 ## 📖 More Information
 
-- 📖 [Installation Guide](docs/INSTALLATION.md)
-- 🎯 [Project Milestones](docs/MILESTONES.md)
-- 🏗️ [Technical Documentation](docs/PROJECT_STRUCTURE.md)
+- 📖 [Installation Guide](docs/INSTALLATION.md) - Detailed setup instructions
+- 🎯 [Release Notes](https://github.com/kiing-dom/cuhlippa/releases) - What's new in each version
 
 ---
 
@@ -116,4 +114,4 @@ mvn clean package
 - **Modern Swing UI** with custom theming
 - **SQLite** for local data storage and history
 
-For detailed technical documentation, see [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md).
+For detailed technical documentation, see [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) and [docs/MILESTONES.md](docs/MILESTONES.md).
