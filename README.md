@@ -1,7 +1,7 @@
 # 📋 Cuhlippa - Share Your Clipboard Between Computers
 
 [![Java](https://img.shields.io/badge/Java-17+-orange.svg)](https://openjdk.java.net/projects/jdk/17/)
-[![Release](https://img.shields.io/github/v/release/kiing-dom/cuhlippa.svg)](https://github.com/kiing-dom/cuhlippa/releases)
+[![Tag](https://img.shields.io/github/v/tag/kiing-dom/cuhlippa.svg)](https://github.com/kiing-dom/cuhlippa/releases)
 [![Status](https://img.shields.io/badge/Status-Public%20Release-brightgreen.svg)](#)
 
 > **Copy on one computer, paste on another - automatically!**
