@@ -109,7 +109,7 @@
                         </goals>
                         <configuration>
                             <target>
-                                <move file="${project.build.directory}/cuhlippa-client-1.0.0-jar-with-dependencies.jar" 
+                                <move file="${project.build.directory}/cuhlippa-client-${project.version}-jar-with-dependencies.jar" 
                                       tofile="${project.build.directory}/cuhlippa-app.jar"/>
                             </target>
                         </configuration>
