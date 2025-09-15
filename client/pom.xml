@@ -7,7 +7,7 @@
       <parent>
         <groupId>com.cuhlippa</groupId>
         <artifactId>cuhlippa-parent</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     
@@ -21,13 +21,13 @@
         <dependency>
             <groupId>com.cuhlippa</groupId>
             <artifactId>cuhlippa-shared</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
         </dependency>
 
         <dependency>
             <groupId>com.cuhlippa</groupId>
             <artifactId>cuhlippa-server</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
         </dependency>
         
         <!-- Your existing dependencies -->
