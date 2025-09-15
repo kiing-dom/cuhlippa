@@ -3,7 +3,6 @@ package com.cuhlippa.shared.discovery;
 import java.io.IOException;
 import java.net.*;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 
@@ -11,7 +10,9 @@ public class NetworkDiscoveryProtocol {
 
     private NetworkDiscoveryProtocol() {
         // utility class
-    }    /**
+    }
+
+    /**
      * create a multicast socket for discovery
      */
     public static MulticastSocket createDiscoverySocket() throws IOException {
@@ -25,14 +26,17 @@ public class NetworkDiscoveryProtocol {
         socket.joinGroup(groupAddress, null); // null means use default network interface
 
         return socket;
-    }/**
+    }
+
+    /**
      * create a datagram packet for sending discovery messages
      */
     public static DatagramPacket createDiscoveryPacket(DiscoveryMessage message) throws IOException {
         try {
             byte[] data = message.toBytes();
             InetAddress group = InetAddress.getByName(DiscoveryConstants.MULTICAST_GROUP);
-            return new DatagramPacket(data, data.length, group, DiscoveryConstants.DISCOVERY_PORT);        } catch (Exception e) {
+            return new DatagramPacket(data, data.length, group, DiscoveryConstants.DISCOVERY_PORT);
+        } catch (Exception e) {
             throw new IOException("Network discovery setup failed - check your network connection: " + e.getMessage(), e);
         }
     }
@@ -44,7 +48,8 @@ public class NetworkDiscoveryProtocol {
         byte[] buffer = new byte[DiscoveryConstants.BUFFER_SIZE];
         return new DatagramPacket(buffer, buffer.length);
     }
-      /**
+
+    /**
      * Parse a received discovery message
      */
     public static DiscoveryMessage parseReceivedMessage(DatagramPacket packet) throws IOException {
@@ -67,8 +72,10 @@ public class NetworkDiscoveryProtocol {
                 if (isValidDiscoveryInterface(netInterface)) {
                     interfaces.add(netInterface);
                 }
-            }        } catch (SocketException e) {
-            System.err.println("[DISCOVERY] Network interface detection failed, using default settings: " + e.getMessage());
+            }
+        } catch (SocketException e) {
+            System.err.println(
+                    "[DISCOVERY] Network interface detection failed, using default settings: " + e.getMessage());
         }
 
         interfaces.sort((a, b) -> {
@@ -161,7 +168,7 @@ public class NetworkDiscoveryProtocol {
             return false;
         }
     }
-
+    
     /**
      * generate network scan ranges for fallback discovery
      */
@@ -179,19 +186,32 @@ public class NetworkDiscoveryProtocol {
                 }
             }
         }
-
+        
         return ranges;
     }
-
+    
     /**
-     * extract network prefix from IP address (e.g., "192.168.1.100" -> "192.168.1.")
+     * Resolve device names from IP addresses
+     */
+    public static String resolveDeviceName(String ip) {
+        try {
+            return InetAddress.getByName(ip).getHostName();
+        } catch (UnknownHostException e) {
+            return "Unknown Device";
+        }
+    }
+    
+    /**
+     * extract network prefix from IP address (e.g., "192.168.1.100" ->
+     * "192.168.1.")
      */
     private static String getNetworkPrefix(String ip) {
         int lastDot = ip.lastIndexOf('.');
         if (lastDot > 0) {
             return ip.substring(0, lastDot + 1);
         }
-
+        
         return null;
     }
+    
 }

@@ -1,6 +1,7 @@
 package com.cuhlippa.ui.discovery;
 
 import com.cuhlippa.client.discovery.DiscoveredServer;
+import com.cuhlippa.shared.discovery.NetworkDiscoveryProtocol;
 
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
@@ -59,7 +60,9 @@ public class DiscoveredServerTableModel extends AbstractTableModel {
             case 0: // Server Name
                 return server.getServerName();
             case 1: // IP Address
-                return server.getServerIP();
+                String ip = server.getServerIP();
+                String deviceName = NetworkDiscoveryProtocol.resolveDeviceName(ip);
+                return deviceName;
             case 2: // Port
                 return server.getServerPort();
             case 3: // Devices
