@@ -83,22 +83,9 @@ jobs:
           # Use custom release notes
           cat > release_body.md << 'EOF'
         ${{ github.event.inputs.release_notes }}
-        EOF
-        else
+        EOF        else
           # Generate standard release notes
           cat > release_body.md << EOF
-        # 🚀 Cuhlippa v${VERSION} - Professional Clipboard Synchronization
-        
-        **Ready for production use!** Zero-configuration clipboard sync with automatic device discovery.
-        
-        ## ✨ Key Features
-        - **🔍 Automatic Device Discovery** - No manual IP configuration needed
-        - **📱 Cross-Platform Support** - Windows, macOS, and Linux native installers
-        - **🖼️ Rich Content Sync** - Text, images, files up to 10MB
-        - **🔒 Enterprise Security** - Optional AES encryption
-        - **🎨 Professional UI** - Modern interface with dark/light themes
-        - **⚡ Real-Time Sync** - Instant clipboard synchronization
-        
         ## 📦 Installation Options
         
         ### Native Installers (Recommended)
@@ -109,13 +96,6 @@ jobs:
         ### Portable Version
         - **All Platforms**: \`cuhlippa-${VERSION}.zip\` - Requires Java 17+
         
-        ## 🚀 Quick Start Guide
-        
-        ### Native Installers (Zero Configuration)
-        1. Download the installer for your platform
-        2. Install and launch Cuhlippa
-        3. Follow the setup wizard - automatic networking included!
-        
         ## 🔧 System Requirements
         
         ### Native Installers
@@ -124,23 +104,8 @@ jobs:
         - **Linux**: Ubuntu 18.04+, CentOS 7+
         - **Java**: Bundled - no separate installation needed!
         
-        ## 📋 What's New in v${VERSION}
-        - ✅ First-run setup wizard for non-technical users
-        - ✅ Automatic embedded server with zero-config networking
-        - ✅ User-friendly error messages (no technical jargon)
-        - ✅ Native installers with bundled Java runtime
-        - ✅ Professional UI with intuitive terminology
-        
-        ## 🚨 Troubleshooting
-        
-        **Can't find other devices?**
-        - Ensure all devices are on the same WiFi network
-        - Check firewall settings (ports 8080/8081)
-        - Try the manual IP connection option
-        
-        ---
-        
-        **Enterprise-ready clipboard synchronization** - Download now and sync effortlessly! 🎯
+        ### Portable Version
+        - **Java**: 17+ required on all platforms
         EOF
         fi
         
