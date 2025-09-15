@@ -10,7 +10,7 @@ import java.util.List;
 public class DiscoveredServerTableModel extends AbstractTableModel {
     
     private static final String[] COLUMN_NAMES = {
-        "Server Name", "IP Address", "Port", "Devices", "Status"
+        "Server Name", "Device Name", "Port", "Devices", "Status"
     };
     
     private static final Class<?>[] COLUMN_CLASSES = {
@@ -59,7 +59,7 @@ public class DiscoveredServerTableModel extends AbstractTableModel {
         switch (columnIndex) {
             case 0: // Server Name
                 return server.getServerName();
-            case 1: // IP Address
+            case 1: // Device Name
                 String ip = server.getServerIP();
                 String deviceName = NetworkDiscoveryProtocol.resolveDeviceName(ip);
                 return deviceName;
@@ -157,7 +157,7 @@ public class DiscoveredServerTableModel extends AbstractTableModel {
     }
     
     public int getOnlineServerCount() {
-        return (int) servers.stream().mapToInt(s -> s.isOnline() ? 1 : 0).sum();
+        return servers.stream().mapToInt(s -> s.isOnline() ? 1 : 0).sum();
     }
     
     public int getTotalServerCount() {

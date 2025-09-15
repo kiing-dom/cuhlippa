@@ -13,7 +13,7 @@ import java.awt.event.MouseEvent;
 import java.util.List;
 
 public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener {
-    
+
     private final transient NetworkDiscoveryService discoveryService;
     private final JTable serverTable;
     private final DiscoveredServerTableModel tableModel;
@@ -23,16 +23,16 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
     private final JButton refreshButton;
     private final JLabel statusLabel;
     private final JProgressBar progressBar;
-    
+
     private transient DiscoveredServer selectedServer;
     private boolean dialogResult = false;
-    
+
     public DeviceDiscoveryDialog(Frame parent) {
         super(parent, "Find Other Computers", true);
-        
+
         this.discoveryService = new NetworkDiscoveryService();
         this.tableModel = new DiscoveredServerTableModel();
-        
+
         // Initialize components
         this.serverTable = createServerTable();
         this.discoverButton = new JButton("🔍 Search for Computers");
@@ -41,95 +41,102 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
         this.refreshButton = new JButton("🔄 Refresh");
         this.statusLabel = new JLabel("Click 'Search for Computers' to find available computers");
         this.progressBar = new JProgressBar();
-        
+
         setupUI();
         setupEventHandlers();
-        
+
         // Register for discovery events
         discoveryService.addDiscoveryListener(this);
-        
+
         // Set dialog properties
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         setSize(600, 400);
         setLocationRelativeTo(parent);
     }
-    
+
     private JTable createServerTable() {
         JTable table = new JTable(tableModel);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         table.setRowHeight(25);
         table.getTableHeader().setReorderingAllowed(false);
-        
+
         // Set column widths
         table.getColumnModel().getColumn(0).setPreferredWidth(200); // Server Name
         table.getColumnModel().getColumn(1).setPreferredWidth(150); // IP Address
-        table.getColumnModel().getColumn(2).setPreferredWidth(80);  // Port
-        table.getColumnModel().getColumn(3).setPreferredWidth(80);  // Devices
-        table.getColumnModel().getColumn(4).setPreferredWidth(80);  // Status
-        
+        table.getColumnModel().getColumn(2).setPreferredWidth(80); // Port
+        table.getColumnModel().getColumn(3).setPreferredWidth(80); // Devices
+        table.getColumnModel().getColumn(4).setPreferredWidth(80); // Status
+
         // Custom renderer for status column
         table.getColumnModel().getColumn(4).setCellRenderer(new StatusCellRenderer());
-        
+
         return table;
     }
-    
+
     private void setupUI() {
         setLayout(new BorderLayout());
-        
+
         // Title panel
         JPanel titlePanel = new JPanel(new BorderLayout());
         titlePanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 5, 10));
-        
+
         JLabel titleLabel = new JLabel("🌐 Find Computers to Share Clipboard With");
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 16f));
         titlePanel.add(titleLabel, BorderLayout.WEST);
-        
+
         add(titlePanel, BorderLayout.NORTH);
-        
+
         // Main content panel
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 10, 10));
-        
+
         // Server list panel
         JPanel listPanel = new JPanel(new BorderLayout());
         listPanel.setBorder(BorderFactory.createTitledBorder("Available Computers"));
-        
+
         JScrollPane scrollPane = new JScrollPane(serverTable);
+        scrollPane.setPreferredSize(new Dimension(560, 200));
         listPanel.add(scrollPane, BorderLayout.CENTER);
-        
+
         mainPanel.add(listPanel, BorderLayout.CENTER);
-        
+
         // Status panel
         JPanel statusPanel = new JPanel(new BorderLayout());
         statusPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
-        
+
         statusPanel.add(statusLabel, BorderLayout.WEST);
-        
+
         progressBar.setIndeterminate(false);
         progressBar.setVisible(false);
         statusPanel.add(progressBar, BorderLayout.EAST);
-        
+
         mainPanel.add(statusPanel, BorderLayout.SOUTH);
-        
+
         add(mainPanel, BorderLayout.CENTER);
-        
+
         // Button panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.X_AXIS));
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
-        
+
         // Update button states
         connectButton.setEnabled(false);
         refreshButton.setEnabled(false);
-        
+
         buttonPanel.add(discoverButton);
+        buttonPanel.add(Box.createHorizontalStrut(5));
+
         buttonPanel.add(refreshButton);
-        buttonPanel.add(Box.createHorizontalStrut(20));
+        buttonPanel.add(Box.createHorizontalGlue());
+
         buttonPanel.add(connectButton);
+        buttonPanel.add(Box.createHorizontalStrut(5));
+
         buttonPanel.add(cancelButton);
-        
+
         add(buttonPanel, BorderLayout.SOUTH);
     }
-    
+
     private void setupEventHandlers() {
         // Discover button
         discoverButton.addActionListener(e -> {
@@ -139,7 +146,7 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
                 startDiscovery();
             }
         });
-        
+
         // Refresh button
         refreshButton.addActionListener(e -> {
             if (discoveryService.isDiscovering()) {
@@ -147,7 +154,7 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
                 updateStatus("Refreshing search...");
             }
         });
-        
+
         // Connect button
         connectButton.addActionListener(e -> {
             int selectedRow = serverTable.getSelectedRow();
@@ -157,13 +164,13 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
                 dispose();
             }
         });
-        
+
         // Cancel button
         cancelButton.addActionListener(e -> {
             dialogResult = false;
             dispose();
         });
-        
+
         // Table selection
         serverTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
@@ -171,7 +178,7 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
                 connectButton.setEnabled(selectedRow >= 0);
             }
         });
-        
+
         // Double-click to connect
         serverTable.addMouseListener(new MouseAdapter() {
             @Override
@@ -187,7 +194,7 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
                 }
             }
         });
-        
+
         // Window closing
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
@@ -196,32 +203,32 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
             }
         });
     }
-    
+
     private void startDiscovery() {
         try {
             tableModel.clearServers();
             discoveryService.startDiscovery();
-            
+
             discoverButton.setText("⏹ Stop Discovery");
             refreshButton.setEnabled(true);
             progressBar.setIndeterminate(true);
             progressBar.setVisible(true);
             updateStatus("Scanning network for other computers...");
-              } catch (Exception e) {
+        } catch (Exception e) {
             updateStatus("Failed to start discovery: " + e.getMessage());
             UserFriendlyErrors.showError(this,
-                "Could not search for other computers. Check your Wi-Fi connection and firewall settings.",
-                "Failed to start network discovery: " + e.getMessage());
+                    "Could not search for other computers. Check your Wi-Fi connection and firewall settings.",
+                    "Failed to start network discovery: " + e.getMessage());
         }
     }
-    
+
     private void stopDiscovery() {
         discoveryService.stopDiscovery();
-        
+
         discoverButton.setText("🔍 Search for Computers");
         refreshButton.setEnabled(false);
         progressBar.setVisible(false);
-        
+
         List<DiscoveredServer> servers = tableModel.getServers();
         if (servers.isEmpty()) {
             updateStatus("No computers found. Try manual entry if needed.");
@@ -229,20 +236,20 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
             updateStatus("Found " + servers.size() + " computer(s). Select one to connect.");
         }
     }
-    
+
     private void updateStatus(String message) {
         SwingUtilities.invokeLater(() -> {
             statusLabel.setText(message);
         });
     }
-    
+
     private void cleanup() {
         if (discoveryService.isDiscovering()) {
             discoveryService.stopDiscovery();
         }
         discoveryService.shutdown();
     }
-    
+
     // DiscoveryListener implementation
     @Override
     public void onServerDiscovered(DiscoveredServer server) {
@@ -251,7 +258,7 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
             updateStatus("Found " + tableModel.getRowCount() + " computer(s). Select one to connect.");
         });
     }
-    
+
     @Override
     public void onServerLost(DiscoveredServer server) {
         SwingUtilities.invokeLater(() -> {
@@ -259,7 +266,7 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
             updateStatus("Found " + tableModel.getRowCount() + " computer(s). Select one to connect.");
         });
     }
-    
+
     @Override
     public void onDiscoveryStatusChanged(boolean active) {
         SwingUtilities.invokeLater(() -> {
@@ -271,31 +278,31 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
             }
         });
     }
-    
+
     // Public API
     public boolean showDialog() {
         setVisible(true);
         return dialogResult;
     }
-    
+
     public DiscoveredServer getSelectedServer() {
         return selectedServer;
     }
-    
+
     @Override
     public void dispose() {
         cleanup();
         super.dispose();
     }
-    
+
     // Custom cell renderer for status column
     private static class StatusCellRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
                 boolean isSelected, boolean hasFocus, int row, int column) {
-            
+
             super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-            
+
             if (value instanceof String) {
                 String status = (String) value;
                 if ("Online".equals(status)) {
@@ -306,7 +313,7 @@ public class DeviceDiscoveryDialog extends JDialog implements DiscoveryListener 
                     setText("🔴 " + status);
                 }
             }
-            
+
             return this;
         }
     }
